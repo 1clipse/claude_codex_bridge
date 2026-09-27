@@ -76,7 +76,7 @@ def inspect_screen(provider: str, screen: dict, *, binding: str) -> Observation:
         # Default main composer has a status footer below the cursor. Selection
         # menus use the same arrow; their confirmation footer is not accepted.
         footer = next((i for i in range(cursor_y+1, len(lines))
-                       if re.match(r'^  (?:gpt-|\d+% context|\? for shortcuts)', lines[i])), None)
+                       if re.match(r'^  (?:[Gg][Pp][Tt]-|\d+% [Cc]ontext|\? for shortcuts)', lines[i])), None)
         if footer is None:
             return result('unknown', 'composer_layout_unknown')
         if _editor_mode_in_footer(lines[footer:]):
