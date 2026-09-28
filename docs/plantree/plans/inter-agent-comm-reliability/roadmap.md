@@ -6,6 +6,30 @@ Last updated: 2026-09-20
 
 ## Current Slice: Unified FIFO And Empty-Result Notices
 
+2026-09-28: [native Claude plugin experiment](evidence/claude-native-composer-live-20260928.md)
+passed real editor read/fill, ghost acceptance and negative-control probes.
+Production integration is not ready: qualify modal/busy binding, folded-paste
+and attachment clear, freshness and experimental-interface compatibility first.
+
+2026-09-27: owner requires model-independent observation for Codex/Claude/OMP.
+[Local implementation and tests](evidence/composer-model-independence-20260927.md)
+remove Codex model-prefix matching; Claude/OMP retain their existing structural
+and native-editor checks. Next: review and live layout qualification before release.
+Claude [dynamic-suggestion return-delivery regressions](evidence/claude-suggestion-reply-delivery-20260927.md)
+are recorded locally: suggestions do not hold the covered FIFO return paths;
+accepted drafts remain protected. Fresh live qualification remains pending.
+The fresh dual-Claude attempt delivered requests but hit upstream API 502
+access-forbidden errors before tool work or replies. A working provider route
+and startup-hook interpreter verification blocked that initial acceptance attempt.
+After the owner switched source, a fresh project passed real Claude question,
+shell work, Claude-to-Claude result continuation and subsequent delivery; both
+queues drained. The persistent test venv also avoided the startup-hook error.
+Live Tab/ghost transition qualification remains separate from this passing chain.
+[Continuous real qualification](evidence/claude-continuous-queue-live-20260927.md)
+subsequently passed 19 jobs, all one attempt: three chains, manual busy turn,
+early clear, real 180-second draft gate, held return and menu recovery. Journal
+timestamps confirm FIFO; queues drained. This is local evidence, not publication.
+
 2026-09-26 maintenance: [v8.7.1 ask-stall repair](evidence/ask-stall-871-20260926.md)
 reproduces Bun stale editor-socket recovery failure and adds queue wait reasons.
 Source changes and focused tests are isolated from the shared installation.
