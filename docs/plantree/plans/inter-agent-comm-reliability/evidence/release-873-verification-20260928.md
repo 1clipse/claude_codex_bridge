@@ -15,7 +15,7 @@ and adds three regression files plus verification records. Claude/OMP production
 adapters are unchanged. Native Claude plugin investigation is evidence only.
 
 The original workspace and unrelated dirty changes remain untouched. Common
-release metadata and Windows-owned version pointers are separate changes;
+release metadata and platform-owned version pointers are separate changes;
 the trusted-base ownership checker is not modified. Version 8.7.3 and tag
 v8.7.3 were absent from npm and the remote at preparation time. Legacy local
 v6.1.2/v6.1.3 tag conflicts were left untouched; main was fetched without tags.
@@ -40,6 +40,13 @@ it is not an additional real model communication pass.
 
 Remote Linux/macOS, lifecycle/provider blackbox, real platform, ownership and
 package gates must finish before tagging. Confirm the combined common and
-Windows version identity, then verify GitHub artifacts/checksums, npm latest
+platform version identity, then verify GitHub artifacts/checksums, npm latest
 and a clean public installation. Append receipts after completion; do not
 infer publication from this preparation record.
+
+CI follow-up: the first provider-blackbox and real-platform runs exposed a
+stub layout mismatch. Its Codex footer lacked the blank separator present in
+native captures. Commit `87fa25b19` corrects only the stub's spacing and cursor
+position; 21 targeted stub/lifecycle/adapter checks passed (75 deselected).
+The guard was not relaxed. Combined release/package checks passed 44 cases;
+Linux candidate archive built successfully. Fresh CI is required on the update.
