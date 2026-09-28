@@ -57,6 +57,8 @@
 Codex composer detection no longer matches model names. Claude suggestion,
 accepted-draft and ordered return-delivery regressions accompany real continuous
 communication verification. Experimental Claude native plugins remain disabled.
+Install/update onboarding no longer recommends the six V3 preview roles;
+explicit installation and updates for installed roles remain available.
 See [upgrade guidance and layout limitations](docs/releases/v8.7.3.md).
 
 ## New in 8.7.2: Recovery and Queued Delivery Fixes

@@ -14,6 +14,15 @@ PR #361. Fix commit `2b5827c16` replaces the Codex model-prefix dependency
 and adds three regression files plus verification records. Claude/OMP production
 adapters are unchanged. Native Claude plugin investigation is evidence only.
 
+Owner follow-up clarified a second pending source slice: six V3 preview roles
+must no longer appear in install/update onboarding suggestions. Commit
+`937720a7d` promotes the original local filter and regression tests. This was
+absent from v8.7.2 and the initial candidate; the older V1/V2 config-panel filter
+was already shipped and must not be confused with it. The new scope passed
+188 update/RolePack/config-UI tests. Explicit installation, installed-role
+updates and missing-source diagnostics remain intact. Final CI must include
+this commit. The original workspace patch is preserved.
+
 The original workspace and unrelated dirty changes remain untouched. Common
 release metadata and platform-owned version pointers are separate changes;
 the trusted-base ownership checker is not modified. Version 8.7.3 and tag
@@ -50,3 +59,10 @@ native captures. Commit `87fa25b19` corrects only the stub's spacing and cursor
 position; 21 targeted stub/lifecycle/adapter checks passed (75 deselected).
 The guard was not relaxed. Combined release/package checks passed 44 cases;
 Linux candidate archive built successfully. Fresh CI is required on the update.
+
+Local complete communication matrix passed mixed providers, broadcast, dual
+Codex/Claude/Gemini, cross-project isolation and cleanup. An earlier harness
+launch from the source cwd was rejected by `ccb_test` isolation checks; it was
+stopped/cleaned through project control commands and rerun from an authorized
+external cwd with caller/provider-home environment removed. The rejected run
+is not counted as a pass.
