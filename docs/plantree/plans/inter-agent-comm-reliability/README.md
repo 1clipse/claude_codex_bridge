@@ -6,10 +6,13 @@ Last updated: 2026-09-26
 
 ## v8.7.1 delivery-stall repair / v8.7.2 qualification
 
-Owner-authorized v8.7.3 preparation is tracked in
+Published v8.7.3 verification is tracked in
 [release qualification](evidence/release-873-verification-20260928.md).
 Scope: model-independent Codex observation and regression/evidence coverage;
-native Claude plugins remain experimental. Publication receipts are pending.
+six V3 preview roles are also removed from install/update recommendations.
+GitHub artifacts and a fresh npm installation are verified; native Claude
+plugins remain experimental. A post-merge macOS timing failure is tracked
+separately in the qualification record, including its bounded rerun.
 
 2026-09-28: [real native Claude composer plugin probe](evidence/claude-native-composer-live-20260928.md)
 confirms opt-in draft read/fill and live Tab suggestion separation. Edit events
@@ -18,7 +21,7 @@ an isolated prototype, not a replacement for the shipped guard.
 
 2026-09-27 local follow-up: [model-independent composer detection](evidence/composer-model-independence-20260927.md)
 removes Codex model-prefix matching and verifies Claude/OMP model independence.
-This follow-up is tested locally, not released or installed.
+This follow-up is included in v8.7.3; existing live projects were not upgraded.
 [Claude suggestion/return tests](evidence/claude-suggestion-reply-delivery-20260927.md)
 verify unaccepted ghost release, accepted-draft protection and ordered return
 delivery. A fresh live rerun after the owner switched API source also passed

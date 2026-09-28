@@ -2,7 +2,7 @@
 
 Date: 2026-09-28
 Role: evidence
-Status: preparation; publication not yet verified
+Status: published and public installation verified; post-merge rerun passed
 Related: [release notes](../../../../releases/v8.7.3.md),
 [composer evidence](composer-model-independence-20260927.md),
 [real Claude qualification](claude-continuous-queue-live-20260927.md)
@@ -45,7 +45,7 @@ including three result chains and fixed-deadline/early-clear FIFO behavior.
 The native API probe separately established important non-readiness limits;
 it is not an additional real model communication pass.
 
-## Remaining gates
+## Preparation gates (completed below)
 
 Remote Linux/macOS, lifecycle/provider blackbox, real platform, ownership and
 package gates must finish before tagging. Confirm the combined common and
@@ -66,3 +66,84 @@ launch from the source cwd was rejected by `ccb_test` isolation checks; it was
 stopped/cleaned through project control commands and rerun from an authorized
 external cwd with caller/provider-home environment removed. The rejected run
 is not counted as a pass.
+
+## Final source and CI receipts
+
+- Fix PR [#362](https://github.com/SeemSeam/claude_codex_bridge/pull/362)
+  merged as `1988f3976136eedf4661bc96dd9f6f30d4c65578`.
+- Common metadata PR [#363](https://github.com/SeemSeam/claude_codex_bridge/pull/363)
+  merged as `ddf1b2c4d136f094e73684a114f3850882a7e0b4`.
+- Platform metadata PR [#364](https://github.com/SeemSeam/claude_codex_bridge/pull/364)
+  merged as `751a3a7271bc76b520107b13e82c0396dd21e9d1`.
+- Annotated tag `v8.7.3` points to that final merge. Its tree is identical to
+  qualified candidate `af48d0fa4cb788c27be9186aeb9521afc956fa26`.
+- Fix-head [tests](https://github.com/SeemSeam/claude_codex_bridge/actions/runs/36364358827)
+  and [platform communication](https://github.com/SeemSeam/claude_codex_bridge/actions/runs/36364358857)
+  passed. Final candidate [tests](https://github.com/SeemSeam/claude_codex_bridge/actions/runs/36364423766)
+  and [platform communication](https://github.com/SeemSeam/claude_codex_bridge/actions/runs/36364423834)
+  also passed: Linux full suites 7475 passed, 11 skipped, 42 deselected;
+  macOS 7367 passed, 119 skipped, 42 deselected; lifecycle 21 passed,
+  7507 deselected. Provider blackbox, package install and Rust jobs passed.
+- Ownership gates passed on each PR; retargeted #363 and #364 were also
+  checked against their actual main base with the unchanged trusted checker.
+  Their scopes were respectively non-platform and platform-only.
+- Common-only duplicate runs `36364405435` / `36364405428` were deliberately
+  cancelled to free runners; they are not passes. Combined-candidate gates
+  qualify the complementary version changes. Superseded intermediate-main
+  run `36365719632` was also cancelled after the final source was merged.
+- The final candidate Linux archive reports 8.7.3. Direct imports from its
+  extracted payload confirm all six preview roles are hidden while ordinary
+  roles and `agentroles.ccb_self` remain available in recommendations.
+
+## Public verification
+
+Tag-triggered release runs all succeeded: artifacts `36365780301`, npm
+`36365780228`, platform package `36365780328`, sidebar `36365780329`.
+
+- [GitHub v8.7.3](https://github.com/SeemSeam/claude_codex_bridge/releases/tag/v8.7.3)
+  is public, not draft or prerelease, with all ten expected assets. The release
+  body matches the committed English/Chinese notes (ignoring terminal newline).
+- Downloaded Linux/macOS archives, APK and both mobile manifests pass
+  `sha256sum -c SHA256SUMS`; the separate platform ZIP and sidebar checksums
+  also pass. Mobile manifest reports 8.7.3 / 8070003; independent parsing of
+  the downloaded APK's binary Android manifest confirms the same values and
+  application ID `io.ccb.mobile.ccb_mobile`.
+- [npm @seemseam/ccb 8.7.3](https://www.npmjs.com/package/@seemseam/ccb/v/8.7.3)
+  is visible with `latest=8.7.3` and SLSA provenance metadata. An initial 404
+  immediately after publication cleared after registry propagation.
+- Fresh installation into an isolated prefix succeeds with process-local
+  `NODE_OPTIONS=--use-env-proxy`; CLI reports `v8.7.3`, and the managed Python
+  imports `aiohttp` / `cryptography`. No global install/config was changed.
+- Both the downloaded archive and fresh npm payload pass direct six-role
+  suppression checks while retaining `agentroles.coder` and `agentroles.ccb_self`.
+  Installed `draft_observation.py` and `commands_runtime/update.py` exactly
+  match tagged source.
+- Remote annotated tag object `4eb0df52df222871ffdc93c33f49876eb14cb988`
+  resolves to `751a3a7271bc76b520107b13e82c0396dd21e9d1`.
+
+## Post-merge timing failure
+
+The identical-tree main push run `36365751280`, after passing pre-tag
+qualification, reported one macOS failure: `test_managed_pane_command_ignores_stale_socket_node`
+exceeded its 15-second subprocess timeout. Other 7366 cases passed, 119 skipped,
+42 deselected. All other jobs and main platform communication run `36365751326`
+passed. The stale-socket test and implementation are unchanged by this release;
+its shell loop performs 100 sleeps plus filesystem/process checks. Runner
+latency is a hypothesis, not an established root cause. The two stale/fresh
+socket tests pass locally (2 passed in 6.12s). Only failed jobs were rerun;
+the rerun passed: 7367 passed, 119 skipped, 42 deselected in 1006.64s
+(job `108756504721`, run attempt 2). Main's required test gate is successful.
+The original timeout remains recorded; a passing rerun does not establish its
+root cause. Documentation receipt PR #365 also passed full tests
+(`36367638166`), platform communication (`36367638127`) and ownership
+(`36367637555`) before this final result-only update. No runtime code changed.
+
+## Cleanup and live environment
+
+Temporary test projects were stopped through CCB; final process inspection
+found no running process using the release verification root or the identified
+temporary resume-test project. Public downloads, isolated npm install and test
+venv under `/var/tmp/ccb-release-873-FiFtaQ` are moved to recoverable desktop
+trash after verification. The isolated source checkout and durable receipts
+remain available. The original dirty source workspace and business panes were
+preserved; no live installation upgrade, daemon restart or issue reply occurred.
