@@ -2,7 +2,7 @@
 
 Date: 2026-09-28
 Role: evidence
-Status: published and public installation verified; post-merge timing rerun pending
+Status: published and public installation verified; post-merge rerun passed
 Related: [release notes](../../../../releases/v8.7.3.md),
 [composer evidence](composer-model-independence-20260927.md),
 [real Claude qualification](claude-continuous-queue-live-20260927.md)
@@ -131,4 +131,19 @@ passed. The stale-socket test and implementation are unchanged by this release;
 its shell loop performs 100 sleeps plus filesystem/process checks. Runner
 latency is a hypothesis, not an established root cause. The two stale/fresh
 socket tests pass locally (2 passed in 6.12s). Only failed jobs were rerun;
-retain the original failure and record the result before closing this follow-up.
+the rerun passed: 7367 passed, 119 skipped, 42 deselected in 1006.64s
+(job `108756504721`, run attempt 2). Main's required test gate is successful.
+The original timeout remains recorded; a passing rerun does not establish its
+root cause. Documentation receipt PR #365 also passed full tests
+(`36367638166`), platform communication (`36367638127`) and ownership
+(`36367637555`) before this final result-only update. No runtime code changed.
+
+## Cleanup and live environment
+
+Temporary test projects were stopped through CCB; final process inspection
+found no running process using the release verification root or the identified
+temporary resume-test project. Public downloads, isolated npm install and test
+venv under `/var/tmp/ccb-release-873-FiFtaQ` are moved to recoverable desktop
+trash after verification. The isolated source checkout and durable receipts
+remain available. The original dirty source workspace and business panes were
+preserved; no live installation upgrade, daemon restart or issue reply occurred.
