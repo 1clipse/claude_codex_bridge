@@ -1,5 +1,14 @@
 # Changelog
 
+## v8.7.3 (2026-09-28)
+
+- Stop recommending six V3 preview roles during install/update onboarding, while preserving explicit installs, installed-role updates and missing-source diagnostics.
+
+- Remove model-name and capitalization dependencies from supported Codex composer footer recognition (#361).
+- Add Claude dynamic-suggestion, accepted-draft, deferred-send and return-before-ask FIFO regressions; preserve the fixed 180-second policy.
+- Record 322 focused passing tests and 19 completed real Claude jobs. Experimental native composer plugins remain disabled.
+- English and Chinese notes, upgrade guidance and layout limitations: [v8.7.3](docs/releases/v8.7.3.md).
+
 ## v8.7.2 (2026-09-26)
 
 - Fix Codex recovery commands accumulating duplicate resume arguments (#356).
