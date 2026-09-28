@@ -6,9 +6,11 @@ Last updated: 2026-09-20
 
 ## Current Slice: Unified FIFO And Empty-Result Notices
 
-v8.7.3 release is authorized; [qualification](evidence/release-873-verification-20260928.md)
-tracks scoped changes, remote gates and public verification. No native Claude
-plugin enablement is included. Next: finish CI, publish and verify artifacts/npm.
+v8.7.3 is published; [qualification](evidence/release-873-verification-20260928.md)
+records merged source, passing candidate gates, public hashes and a fresh npm
+installation with verified six-role recommendation filtering. No native Claude
+plugin enablement is included. Post-merge macOS timing failure/rerun evidence
+is tracked separately; reporter-specific unsupported layouts remain open.
 
 2026-09-28: [native Claude plugin experiment](evidence/claude-native-composer-live-20260928.md)
 passed real editor read/fill, ghost acceptance and negative-control probes.
