@@ -17,6 +17,17 @@ That archive supersedes the former long topic; this capsule owns current state.
 
 ## Contract
 
+Owner clarification (2026-09-27): Codex, Claude and OMP composer detection must
+not depend on model names or name prefixes. Model selection can change at any
+time. Use input structure, cursor, placeholder/style and native editor state;
+unrecognized layouts still block delivery. See the
+[model-independent observation verification](../evidence/composer-model-independence-20260927.md).
+
+Claude's dynamic unaccepted suggestions are recognized by rendering attributes,
+not their text. Tab-accepted suggestions count as drafts even at the initial
+cursor. [Return-delivery regressions](../evidence/claude-suggestion-reply-delivery-20260927.md)
+cover early release, the fixed deadline, FIFO turn ownership and deferred send.
+
 Existing chronological ask/back FIFO and attributed provider turn completion
 remain the prerequisites. Only the eligible queue head inspects the composer.
 
@@ -33,6 +44,12 @@ input releases the job. Daemon restart starts a fresh timer. There is no draft
 backup. The owner excludes typing the exact Codex placeholder as a collision case.
 
 ## Provider boundaries and candidate audit
+
+[2026-09-28 native Claude probe](../evidence/claude-native-composer-live-20260928.md)
+verified experimental plugin read/fill on a real CLI. It is not integrated:
+`prompt.edit` misses Tab acceptance and folded paste, and empty native reads
+also occur in a modal or with no bound editor. Existing protection remains;
+native clear qualification currently covers editor text, not all attachments.
 
 | Provider | Empty/draft observation | Clear |
 | --- | --- | --- |

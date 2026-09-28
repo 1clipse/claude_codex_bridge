@@ -6,6 +6,23 @@ Last updated: 2026-09-26
 
 ## v8.7.1 delivery-stall repair / v8.7.2 qualification
 
+2026-09-28: [real native Claude composer plugin probe](evidence/claude-native-composer-live-20260928.md)
+confirms opt-in draft read/fill and live Tab suggestion separation. Edit events
+miss Tab/paste transitions; modal and unbound reads can both be empty. This is
+an isolated prototype, not a replacement for the shipped guard.
+
+2026-09-27 local follow-up: [model-independent composer detection](evidence/composer-model-independence-20260927.md)
+removes Codex model-prefix matching and verifies Claude/OMP model independence.
+This follow-up is tested locally, not released or installed.
+[Claude suggestion/return tests](evidence/claude-suggestion-reply-delivery-20260927.md)
+verify unaccepted ghost release, accepted-draft protection and ordered return
+delivery. A fresh live rerun after the owner switched API source also passed
+Claude shell work, Claude-to-Claude result continuation and subsequent delivery;
+live Tab/ghost transitions still rely on earlier captures.
+[Continuous real qualification](evidence/claude-continuous-queue-live-20260927.md)
+passed 19 jobs: three same-session chains, human busy gating, early/deadline
+draft release, return-before-ask FIFO, and model-menu exit recovery.
+
 [v8.7.2 qualification](evidence/release-872-verification-20260926.md): repair
 and separated release metadata merged through PRs #357–#359. The candidate
 passed full Linux/macOS suites and real macOS/WSL communication, recovery and
