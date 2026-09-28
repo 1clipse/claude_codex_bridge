@@ -1676,7 +1676,7 @@ def _print_guarded_idle_composer(provider: str) -> None:
     if not sys.stdout.isatty():
         return
     if provider == "codex":
-        sys.stdout.write("\r\x1b[J› Ask Codex to do anything\r\n  ? for shortcuts\x1b[1A\x1b[3G")
+        sys.stdout.write("\r\x1b[J› Ask Codex to do anything\r\n\r\n  ? for shortcuts\x1b[2A\x1b[3G")
     elif provider == "claude":
         sys.stdout.write("\r\x1b[J──────────────────────────────\r\n❯ \r\n──────────────────────────────\x1b[1A\x1b[3G")
     sys.stdout.flush()
