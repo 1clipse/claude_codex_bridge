@@ -6,6 +6,11 @@ Last updated: 2026-09-26
 
 ## v8.7.1 delivery-stall repair / v8.7.2 qualification
 
+Owner-authorized v8.7.3 preparation is tracked in
+[release qualification](evidence/release-873-verification-20260928.md).
+Scope: model-independent Codex observation and regression/evidence coverage;
+native Claude plugins remain experimental. Publication receipts are pending.
+
 2026-09-28: [real native Claude composer plugin probe](evidence/claude-native-composer-live-20260928.md)
 confirms opt-in draft read/fill and live Tab suggestion separation. Edit events
 miss Tab/paste transitions; modal and unbound reads can both be empty. This is
