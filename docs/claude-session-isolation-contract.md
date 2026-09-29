@@ -194,23 +194,24 @@ When `ccb` starts a managed Claude agent:
   launching Claude
 - it must materialize required Claude auth/config projections into the managed
   home without treating them as conversation identity
-- before adding `--continue`, it must prove that the recorded
-  `claude_provider_authority_fingerprint` matches the newly prepared launch;
-  mismatched proof must not directly continue the old native id
-- on a mismatch, the old transcript path must be a regular file inside the
-  current Agent-managed Claude home before it may seed a continuation
-- Claude Code 2.1.220 supports `--resume <id> --fork-session`; when capability
-  probing confirms that flag, startup uses it to create a new native id with
-  imported context and binds that id to the current authority generation
-- if the flag is unavailable or the old path cannot be proven Agent-owned,
-  startup creates a linked fresh binding while preserving the old transcript
-  and must not label the result as a native fork
-- a legacy managed session with no authority fingerprint may continue once
-  when its history and home remain inside the same Agent-managed Claude home;
-  the new launch persists the current fingerprint, so later restarts return to
-  strict matching
+- account, credential, and endpoint changes must not preemptively suppress
+  `--continue`; local history belongs to the conversation, while the newly
+  prepared authority controls future requests
+- the recorded home must remain inside the current Agent-managed home; a
+  recorded native transcript path must be an existing file inside that home
+- validated local history is attempted through native `--continue`, including
+  legacy linked-pending records; authority generations remain diagnostic
+  provenance and do not require native fork support
+- explicit fresh or user-selected startup session controls take precedence;
+  automatic continuation must not resurrect `old_*` bindings after clear
+- absent usable history permits fresh launch; the existing recognized native
+  missing-conversation recovery may remove CCB's continue flag once, preserving
+  historical binding evidence and recording the fallback reason
+- auth/network/rate-limit errors and ambiguous transcript incompatibility
+  must not cause automatic context clearing; arbitrary gateway compatibility
+  and interactive pane recovery require provider-specific qualification
 - `ccb restart <agent>` must use normal managed-home/profile preparation and
-  this authority check rather than replaying the persisted `start_cmd`
+  this continuity selection rather than replaying the persisted `start_cmd`
 - it must not use an existing managed provider home as the inherited source
   home; if the current process `HOME` is a CCB provider-state home, startup must
   fall back to the real account home or an explicit source-home override

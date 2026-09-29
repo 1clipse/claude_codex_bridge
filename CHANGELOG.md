@@ -1,5 +1,12 @@
 # Changelog
 
+## v8.7.4 (2026-09-29)
+
+- Prefer Claude/Codex local conversation restoration across account, key and gateway changes; retain explicit fresh behavior and ownership checks.
+- Preserve continuity metadata, Pi manual-session observations and OMP title-slot history compatibility.
+- Verify native cross-route replay and repeat reopening with synthetic credentials; 402 combined checks passed.
+- Refresh the WeChat QR image. [Full bilingual notes and limitations](docs/releases/v8.7.4.md).
+
 ## v8.7.3 (2026-09-28)
 
 - Stop recommending six V3 preview roles during install/update onboarding, while preserving explicit installs, installed-role updates and missing-source diagnostics.

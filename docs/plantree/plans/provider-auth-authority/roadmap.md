@@ -7,14 +7,21 @@ Date: 2026-08-18
 - Current status: Issue #319 is published in CCB `v8.6.10` from release commit
   `705c932ec`, with annotated tag, bilingual GitHub Release assets, and npm
   `latest` at `@seemseam/ccb@8.6.10`.
-- Current phase: qualify organic reconnect faults and continue the remaining
-  credential-writer and Provider-capability boundaries.
-- Next target: complete the macOS platform gate for Issue #319, then continue
-  organic real-fault qualification and the arbitrary `provider_profile.home`
-  writable-state boundary.
+- Current phase: Claude/Codex continuity-first and OMP/Pi resume repair are locally implemented and
+  verified, not installed/released. See
+  [evidence](evidence/claude-continuity-first-20260929.md).
+- Next target: review/integrate the combined patch, qualify interactive restoration,
+  and align Gemini authority gates. Prior credential-writer/platform gates remain.
 
 ## Done
 
+- Codex preserves validated native bindings across authority changes; OMP title
+  slots and Pi manual-session observations are handled. All three real CLIs
+  replay history on changed local route/key and repeat reopen.
+  [Evidence](evidence/codex-omp-pi-continuity-20260929.md).
+- Implemented Claude continuity-first selection, continuity persistence, explicit
+  session-control precedence, and fallback evidence locally. Tests: 232 focused
+  regressions plus one real Claude CLI replay. [Evidence](evidence/claude-continuity-first-20260929.md).
 - Corrected managed Claude API-key approval for explicit profile/agent env and
   allowed ambient credentials without external writes. Local implementation:
   [approval evidence](evidence/claude-explicit-key-approval-20260917.md).
@@ -115,6 +122,8 @@ Date: 2026-08-18
 
 ## In Progress
 
+- Review/integrate the combined slice and qualify interactive restoration;
+  align Gemini with [decision 008](decisions/008-continuity-first-native-restore.md).
 - Qualify the local PR350 integration and repaired auth boundaries on
   `integrate/pr350-auth-fixes`; native platform and remote OAuth qualification
   remain open. See [integration evidence](../../baseline/evidence/pr350-local-integration-20260916.md).

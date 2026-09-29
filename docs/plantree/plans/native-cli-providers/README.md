@@ -47,6 +47,8 @@ override the shipped contracts.
 
 ## File Map
 
+- [Codex/OMP/Pi continuity evidence](../provider-auth-authority/evidence/codex-omp-pi-continuity-20260929.md):
+  local OMP title-slot and Pi manual-session resume repairs, native cross-route replay.
 - [roadmap.md](roadmap.md): current phase, landed work, next tasks, and
   deferred follow-ups.
 - [implementation-status.md](implementation-status.md): operational handoff for

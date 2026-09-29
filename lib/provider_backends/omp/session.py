@@ -126,6 +126,7 @@ def resume_binding_for_launch(
     valid, reason = validate_native_session_binding(
         session_id=native_id, session_path=Path(native_path),
         work_dir=work_dir, session_dir=session_dir,
+        allow_omp_title_slot=True,
     )
     if not valid:
         return fresh(reason)

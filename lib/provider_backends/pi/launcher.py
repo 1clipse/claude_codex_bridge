@@ -144,6 +144,7 @@ def _build_start_cmd(
     if prepared_state is None:
         raise RuntimeError("pi launch requires prepared_state")
     launch_context = prepared_state
+    launch_context["pi_restore_enabled"] = bool(command.restore)
     command_parts = (*provider_start_parts("pi"), *spec.startup_args)
     template_parts = _template_parts(getattr(spec, "provider_command_template", None))
     if _has_session_control((*command_parts, *template_parts)):
@@ -229,6 +230,7 @@ def _build_session_payload(
             "pi_session_dir": str(prepared_state.get("pi_session_dir") or _pi_session_dir(prepared_state)),
             "pi_resume_status": str(prepared_state.get("pi_resume_status") or "fresh_no_binding"),
             "pi_explicit_session_control": bool(prepared_state.get("pi_explicit_session_control")),
+            "pi_restore_enabled": prepared_state.get("pi_restore_enabled", True),
             "pi_restart_start_cmd_template": str(prepared_state.get("pi_restart_start_cmd_template") or ""),
         }
     )
@@ -504,7 +506,18 @@ export default function ccbPiCompletion(pi: any): void {
     });
   });
 
-  pi.on("input", async (event: any) => {
+  const observeNativeSession = (ctx: any) => {
+    const manager = ctx?.sessionManager;
+    appendEvent("native_session", {
+      pi_session_id: String(manager?.getSessionId?.() || ""),
+      pi_session_path: String(manager?.getSessionFile?.() || ""),
+    });
+  };
+  pi.on("session_switch", async (_event: any, ctx: any) => {
+    observeNativeSession(ctx);
+  });
+  pi.on("input", async (event: any, ctx: any) => {
+    observeNativeSession(ctx);
     const prompt = String(event?.text || "");
     const source = String(event?.source || "unknown");
     if (bindDispatchedInput(prompt, source)) {
@@ -541,7 +554,8 @@ export default function ccbPiCompletion(pi: any): void {
     }
   });
 
-  pi.on("turn_end", async (event: any) => {
+  pi.on("turn_end", async (event: any, ctx: any) => {
+    observeNativeSession(ctx);
     rememberAssistant(event?.message);
     appendEvent("turn_end", {
       turn_index: event?.turnIndex ?? null,

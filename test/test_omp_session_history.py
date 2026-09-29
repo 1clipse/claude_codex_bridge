@@ -172,7 +172,8 @@ def test_switch_to_another_valid_session_selects_switched_identity(tmp_path):
 
 
 @pytest.mark.skipif(not os.environ.get("CCB_OMP_NATIVE_SMOKE"), reason="opt-in isolated real OMP")
-def test_real_omp_resumes_history_and_reports_native_identity(tmp_path):
+@pytest.mark.parametrize("title_slot", [False, True])
+def test_real_omp_resumes_history_and_reports_native_identity(tmp_path, title_slot):
     root = tmp_path / "sessions"
     root.mkdir()
     native_id = "019fdd2b-8362-7958-9e85-d0a5eed17084"
@@ -183,6 +184,8 @@ def test_real_omp_resumes_history_and_reports_native_identity(tmp_path):
         dict(type="message", id="user0001", parentId=None, timestamp=stamp,
              message=dict(role="user", content=[dict(type="text", text="CCB_HISTORY_CANARY_74")], timestamp=1789776000000)),
     ]) + "\n")
+    if title_slot:
+        native.write_text(_title_slot() + native.read_text())
     home = tmp_path / "isolated-home"
     home.mkdir()
     agent_dir = home / ".omp/agent"
@@ -228,3 +231,38 @@ def test_real_omp_resumes_history_and_reports_native_identity(tmp_path):
     record.write_text(json.dumps(dict(agent_name="demo", ccb_project_id="project", work_dir=str(tmp_path),
                                      ccb_session_id="ccb-smoke", omp_completion_event_log=prepared["omp_completion_event_log"])))
     assert resolve(tmp_path, root, record)["omp_resume_session_id"] == native_id
+
+
+def _title_slot():
+    slot = dict(type="title", v=1, title="Resume smoke", source="user",
+                updatedAt="2026-09-29T00:00:00Z", pad="")
+    slot["pad"] = " " * (256 - len((json.dumps(slot) + "\n").encode()))
+    return json.dumps(slot) + "\n"
+
+
+def test_current_omp_title_slot_preserves_exact_resume(tmp_path):
+    root, native, events, event, data, record = fixture(tmp_path)
+    native.write_text(_title_slot() + native.read_text())
+    assert resolve(tmp_path, root, record)["omp_resume_session_id"] == "native-old"
+    from provider_backends.pi.session import validate_native_session_binding
+    valid, reason = validate_native_session_binding(
+        session_id="native-old", session_path=native, work_dir=tmp_path, session_dir=root)
+    assert not valid and reason == "native_session_header_mismatch"
+
+
+@pytest.mark.parametrize("damage", ["version", "source", "missing-title",
+                                    "double-slot", "missing-header", "id", "cwd"])
+def test_title_slot_never_bypasses_header_or_identity_validation(tmp_path, damage):
+    root, native, events, event, data, record = fixture(tmp_path)
+    slot = json.loads(_title_slot())
+    header = json.loads(native.read_text())
+    if damage == "version": slot["v"] = 2
+    elif damage == "source": slot["source"] = "unknown"
+    elif damage == "missing-title": slot.pop("title")
+    elif damage == "id": header["id"] = "other"
+    elif damage == "cwd": header["cwd"] = "/other"
+    content = json.dumps(slot) + "\n"
+    if damage == "double-slot": content += _title_slot()
+    if damage != "missing-header": content += json.dumps(header) + "\n"
+    native.write_text(content)
+    assert resolve(tmp_path, root, record)["omp_resume_status"].startswith("fresh_")

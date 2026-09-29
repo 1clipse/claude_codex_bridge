@@ -39,6 +39,7 @@ def build_start_cmd(
     profile = load_resolved_provider_profile_fn(runtime_dir)
     launch_context = prepared_state if isinstance(prepared_state, dict) else {}
     launch_context.pop('ccb_continuation_launch_mode', None)
+    launch_context['ccb_codex_auto_restore'] = False
     project_root = _path_or_none(launch_context.get('project_root'))
     if project_root is None:
         raise RuntimeError('Codex launch requires prepare_launch_context before build_start_cmd')
@@ -242,6 +243,8 @@ def _codex_args(
         )
         if session_id:
             codex_args.extend(['resume', session_id])
+            if launch_context is not None:
+                launch_context['ccb_codex_auto_restore'] = True
         elif load_linked_continuation_session_id_fn is not None:
             continuation_id = load_linked_continuation_session_id_fn(
                 spec,
@@ -259,6 +262,7 @@ def _codex_args(
                 codex_args.extend(['fork', continuation_id])
                 if launch_context is not None:
                     launch_context['ccb_continuation_launch_mode'] = 'fork'
+                    launch_context['ccb_codex_auto_restore'] = True
     return codex_args
 
 

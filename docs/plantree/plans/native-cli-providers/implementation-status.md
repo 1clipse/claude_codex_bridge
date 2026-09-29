@@ -5,6 +5,12 @@ Last updated: 2026-09-05
 
 ## Current Phase
 
+2026-09-29 local continuity candidate: OMP title-slot validation and Pi manual
+session observation/restore policy fixes are carried into the isolated
+continuity worktree. Both real CLIs preserve native identity and replay user
+and assistant history after switching loopback route/key, then reopening again.
+Not installed or released. [Evidence and limits](../provider-auth-authority/evidence/codex-omp-pi-continuity-20260929.md).
+
 2026-09-19 local candidate: [OMP exact context resume](topics/omp-context-resume.md)
 implemented in OMP launcher/session/extension with 236 passing tests including
 isolated real OMP RPC history loading. Not installed or released. Next: review

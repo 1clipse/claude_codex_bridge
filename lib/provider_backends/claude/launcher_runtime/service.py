@@ -24,6 +24,15 @@ _SENSITIVE_PERSISTED_ENV = {'ANTHROPIC_API_KEY', 'ANTHROPIC_AUTH_TOKEN'}
 _SHELL_OPERATORS = {';', '&&', '||', '|', '&', '<', '>', '<<', '>>'}
 
 
+def _automatic_restore_requested(command, spec) -> bool:
+    # User-selected session controls must not be combined with CCB --continue.
+    explicit = {'--continue', '-c', '--resume', '-r', '--session-id', '--fork-session'}
+    return (
+        should_restore_provider_history(spec.restore_default, cli_restore=command.restore)
+        and not any(str(arg).split('=', 1)[0] in explicit for arg in spec.startup_args)
+    )
+
+
 def build_runtime_launcher(
     *,
     prepare_runtime_fn,
@@ -79,7 +88,7 @@ def build_start_cmd(
     restore_target = resolve_restore_target_fn(
         spec=spec,
         runtime_dir=runtime_dir,
-        restore=should_restore_provider_history(spec.restore_default, cli_restore=command.restore),
+        restore=_automatic_restore_requested(command, spec),
     )
     home_overrides = prepare_home_overrides_fn(
         runtime_dir,
@@ -152,6 +161,9 @@ def build_start_cmd(
         )
     elif restore_target.has_history:
         cmd_parts.append('--continue')
+    launch_context['ccb_claude_auto_restore'] = bool(
+        restore_target.has_history or launch_context.get('ccb_continuation_launch_mode')
+    )
     cmd_parts.extend(spec.startup_args)
 
     cmd = ' '.join(shlex.quote(str(part)) for part in cmd_parts)
@@ -175,7 +187,7 @@ def resolve_run_cwd(
         spec=spec,
         runtime_dir=runtime_dir,
         workspace_path=plan.workspace_path,
-        restore=should_restore_provider_history(spec.restore_default, cli_restore=command.restore),
+        restore=_automatic_restore_requested(command, spec),
     ).run_cwd
 
 
@@ -223,6 +235,8 @@ def build_session_payload(
         payload['claude_provider_authority_fingerprint'] = authority_fingerprint
     if str(prepared_state.get('ccb_continuation_launch_mode') or '').strip() == 'fork':
         payload['ccb_continuation_launch_mode'] = 'fork'
+    if 'ccb_claude_auto_restore' in prepared_state:
+        payload['ccb_claude_auto_restore'] = bool(prepared_state['ccb_claude_auto_restore'])
     return payload
 
 
