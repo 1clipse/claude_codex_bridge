@@ -58,6 +58,8 @@ execution order.
 
 ## File Map
 
+- [evidence/v8.7.4-release-20260929.md](evidence/v8.7.4-release-20260929.md):
+  public release identity, assets, installation verification, and CI qualification.
 - [evidence/codex-omp-pi-continuity-20260929.md](evidence/codex-omp-pi-continuity-20260929.md):
   Codex authority rebinding and OMP/Pi history fixes, with real route/key replay.
 - [decisions/008-continuity-first-native-restore.md](decisions/008-continuity-first-native-restore.md):

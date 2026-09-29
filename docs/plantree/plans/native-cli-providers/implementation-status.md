@@ -1,15 +1,17 @@
 # Native CLI Providers Implementation Status
 
 Date: 2026-07-21
-Last updated: 2026-09-05
+Last updated: 2026-09-29
 
 ## Current Phase
 
-2026-09-29 local continuity candidate: OMP title-slot validation and Pi manual
-session observation/restore policy fixes are carried into the isolated
-continuity worktree. Both real CLIs preserve native identity and replay user
+2026-09-29 continuity release: OMP title-slot validation and Pi manual
+session observation/restore policy fixes are published in `v8.7.4`.
+Both real CLIs preserve native identity and replay user
 and assistant history after switching loopback route/key, then reopening again.
-Not installed or released. [Evidence and limits](../provider-auth-authority/evidence/codex-omp-pi-continuity-20260929.md).
+Published assets and an isolated npm installation are verified; working panes
+were not upgraded. [Native evidence and limits](../provider-auth-authority/evidence/codex-omp-pi-continuity-20260929.md);
+[release receipt and CI qualification](../provider-auth-authority/evidence/v8.7.4-release-20260929.md).
 
 2026-09-19 local candidate: [OMP exact context resume](topics/omp-context-resume.md)
 implemented in OMP launcher/session/extension with 236 passing tests including

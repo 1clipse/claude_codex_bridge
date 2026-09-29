@@ -2,7 +2,9 @@
 
 Date: 2026-09-29
 Role: evidence
-Status: Local implementation verified; not installed or released
+Status: Pre-release verification snapshot; subsequently published in v8.7.4
+
+Publication and installation evidence: [release receipt](v8.7.4-release-20260929.md).
 Related: [decision 008](../decisions/008-continuity-first-native-restore.md)
 
 ## Source And Changes

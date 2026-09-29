@@ -4,17 +4,21 @@ Date: 2026-08-18
 
 ## Status Summary
 
-- Current status: Issue #319 is published in CCB `v8.6.10` from release commit
-  `705c932ec`, with annotated tag, bilingual GitHub Release assets, and npm
-  `latest` at `@seemseam/ccb@8.6.10`.
-- Current phase: Claude/Codex continuity-first and OMP/Pi resume repair are locally implemented and
-  verified, not installed/released. See
-  [evidence](evidence/claude-continuity-first-20260929.md).
-- Next target: review/integrate the combined patch, qualify interactive restoration,
+- Current status: Claude/Codex continuity-first and OMP/Pi resume repair are
+  published in stable `v8.7.4`, commit `947f1a4a574ea601b4bb970fbcd6ca3cea36d3c2`;
+  GitHub assets, npm `latest`, and isolated installation are verified.
+  [Release receipt and CI limits](evidence/v8.7.4-release-20260929.md).
+- Current phase: public distribution and all release-commit CI workflows verified;
+  the WSL first-attempt failure and unchanged rerun are retained in the receipt.
+  Business panes were not restarted.
+- Next target: harden the WSL timing-sensitive fixture, qualify interactive restoration,
   and align Gemini authority gates. Prior credential-writer/platform gates remain.
 
 ## Done
 
+- Published the scoped continuity repair as `v8.7.4`; release notes are bilingual,
+  all ten expected assets are present, and archive payloads match the tagged source.
+  [Receipt](evidence/v8.7.4-release-20260929.md).
 - Codex preserves validated native bindings across authority changes; OMP title
   slots and Pi manual-session observations are handled. All three real CLIs
   replay history on changed local route/key and repeat reopen.
