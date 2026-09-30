@@ -1,9 +1,17 @@
 # Native CLI Providers Implementation Status
 
 Date: 2026-07-21
-Last updated: 2026-09-29
+Last updated: 2026-09-30
 
 ## Current Phase
+
+2026-09-30 release candidate: OMP/Pi no longer treat `/model` and other
+control-only input events as replacements for an active CCB ask. Supersession
+moves to the actual `before_agent_start` boundary; native session switches
+remain explicit. The shared extension passed Bun event replay and focused
+regressions, and a real OMP 18.3.5 active-turn model switch preserved the same
+job through an exact non-empty reply. Real Pi TUI model switching remains an
+explicit post-release qualification limit. [Evidence](evidence/omp-pi-control-input-supersession-20260930.md).
 
 2026-09-29 continuity release: OMP title-slot validation and Pi manual
 session observation/restore policy fixes are published in `v8.7.4`.

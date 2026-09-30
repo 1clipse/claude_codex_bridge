@@ -1,5 +1,12 @@
 # Changelog
 
+## v8.7.5 (2026-09-30)
+
+- Keep OMP/Pi asks bound when `/model` or another control-only input event opens a native selector.
+- Move replacement-turn detection to the actual `before_agent_start` lifecycle boundary while preserving explicit session-switch and real new-turn supersession.
+- Pass 302 focused regressions and a real OMP 18.3.5 active-turn model switch with one exact non-empty reply and no `request_superseded` event.
+- Pi shares the repaired generated extension and passes Bun lifecycle replay; a separate authenticated Pi TUI model-switch run remains unqualified. [Full bilingual notes](docs/releases/v8.7.5.md).
+
 ## v8.7.4 (2026-09-29)
 
 - Prefer Claude/Codex local conversation restoration across account, key and gateway changes; retain explicit fresh behavior and ownership checks.

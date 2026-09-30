@@ -356,6 +356,8 @@ const runtimeInstanceId = randomUUID();
 const consumedDispatches = new Set<string>();
 let activeReqId = "";
 let latestAssistant: Record<string, unknown> | null = null;
+let activePromptSha256 = "";
+let activeAgentStarted = false;
 
 function appendEvent(type: string, details: Record<string, unknown> = {}): void {
   if (!eventPath || !actor || !launchSessionId) return;
@@ -466,6 +468,25 @@ function rememberAssistant(message: unknown): void {
   if (normalized) latestAssistant = normalized;
 }
 
+function supersedeActiveRequest(
+  supersededBy: string,
+  inputSource: string,
+  prompt: string = "",
+): void {
+  if (!activeReqId) return;
+  const supersededReqId = activeReqId;
+  appendEvent("request_superseded", {
+    req_id: supersededReqId,
+    superseded_by: supersededBy,
+    input_source: inputSource,
+    input_sha256: prompt ? promptHash(prompt) : "",
+  });
+  activeReqId = "";
+  latestAssistant = null;
+  activePromptSha256 = "";
+  activeAgentStarted = false;
+}
+
 function bindDispatchedInput(prompt: string, source: string): boolean {
   const dispatch = matchingDispatch(prompt);
   if (!dispatch) return false;
@@ -480,6 +501,8 @@ function bindDispatchedInput(prompt: string, source: string): boolean {
   }
   latestAssistant = null;
   activeReqId = dispatchReqId;
+  activePromptSha256 = promptHash(prompt);
+  activeAgentStarted = false;
   if (dispatchReqId && anchorReqId && dispatchReqId !== anchorReqId) {
     appendEvent("binding_error", {
       req_id: dispatchReqId,
@@ -523,27 +546,39 @@ export default function ccbPiCompletion(pi: any): void {
     if (bindDispatchedInput(prompt, source)) {
       return { action: "continue" };
     }
-    if (activeReqId && source !== "extension") {
-      const supersededReqId = activeReqId;
-      appendEvent("request_superseded", {
-        req_id: supersededReqId,
-        superseded_by: "unmanaged_input",
-        input_source: source,
-        input_sha256: promptHash(prompt),
-      });
-      activeReqId = "";
-      latestAssistant = null;
-    }
     return { action: "continue" };
   });
 
   pi.on("before_agent_start", async (event: any) => {
-    if (activeReqId) return;
     const prompt = String(event?.prompt || "");
+    if (activeReqId) {
+      const anchorReqId = requestAnchor(prompt);
+      const promptDigest = promptHash(prompt);
+      if (
+        !activeAgentStarted ||
+        anchorReqId === activeReqId ||
+        promptDigest === activePromptSha256
+      ) {
+        activeAgentStarted = true;
+        return;
+      }
+      supersedeActiveRequest(
+        "unmanaged_agent_turn",
+        "before_agent_start",
+        prompt,
+      );
+      return;
+    }
     bindDispatchedInput(prompt, "before_agent_start");
   });
 
+  pi.on("session_switch", async (event: any) => {
+    const reason = String(event?.reason || "unknown");
+    supersedeActiveRequest("session_switch:" + reason, "session_switch");
+  });
+
   pi.on("agent_start", async () => {
+    if (activeReqId) activeAgentStarted = true;
     appendEvent("agent_start");
   });
 

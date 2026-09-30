@@ -1,7 +1,7 @@
 # Native CLI Providers Roadmap
 
 Date: 2026-06-13
-Last updated: 2026-09-05
+Last updated: 2026-09-30
 
 ## Status Summary
 
@@ -72,6 +72,13 @@ Last updated: 2026-09-05
   and restarting both existing OMP agents.
 
 ## Done
+
+- OMP/Pi completion binding now distinguishes submitted UI/control input from
+  an actual new provider turn: `/model` preserves the active ask, while
+  `before_agent_start` for a different prompt and `session_switch` supersede it
+  explicitly. Focused extension replay and provider regressions pass; a real
+  OMP active-turn switch also completed the same job with an exact reply.
+  [Evidence](evidence/omp-pi-control-input-supersession-20260930.md).
 
 - Implemented OMP visible-pane ask execution with owner-only lifecycle and
   dispatch sidecars, exact prompt/request/actor/launch/runtime binding,

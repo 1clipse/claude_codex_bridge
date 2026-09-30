@@ -595,7 +595,7 @@ def test_pi_runtime_instance_change_does_not_rebind_inflight_job(
     assert result.decision.reason == "pi_runtime_restarted"
 
 
-def test_pi_unmanaged_input_supersedes_inflight_job(
+def test_pi_unmanaged_agent_turn_supersedes_inflight_job(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
@@ -607,8 +607,8 @@ def test_pi_unmanaged_input_supersedes_inflight_job(
         _event(
             "request_superseded",
             req_id=req_id,
-            superseded_by="unmanaged_input",
-            input_source="interactive",
+            superseded_by="unmanaged_agent_turn",
+            input_source="before_agent_start",
         ),
         _event(
             "agent_settled",
@@ -623,7 +623,7 @@ def test_pi_unmanaged_input_supersedes_inflight_job(
     assert result.decision.status is CompletionStatus.INCOMPLETE
     assert result.decision.reason == "pi_request_superseded"
     assert result.decision.reply == ""
-    assert result.decision.diagnostics["superseded_by"] == "unmanaged_input"
+    assert result.decision.diagnostics["superseded_by"] == "unmanaged_agent_turn"
 
 
 def test_pi_busy_pane_defers_without_sending_then_dispatches_when_idle(
