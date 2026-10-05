@@ -15,7 +15,7 @@ from pathlib import Path
 import re
 import sys
 
-from .files import apply_files, read_json, scan, write_json
+from .files import apply_files, check_scope, read_json, scan, write_json
 from .objects import Git, Objects, SyncError
 from .transport import WIRE_LIMIT
 
@@ -91,6 +91,7 @@ class Endpoint:
             (self.repository / '.git' / 'shallow').write_text(request['base'] + '\n')
             repo.run('worktree', 'add', '-B', 'ccb/remote', str(self.workspace), request['base'])
         git = Git(self.workspace, **self.git_options)
+        check_scope(self.workspace, self.include)
         if old.get('phase') == 'acked':
             old_objects = git.export(old['head'])
             before = old_objects.validate_bootstrap(old['head'], self.include)
@@ -173,6 +174,7 @@ class Endpoint:
                 write_json(self.state_path, state)
             return result
         git = Git(self.workspace, **self.git_options)
+        check_scope(self.workspace, self.include)
         current = git.head()
         history = git.export(current, state['base'])
         history.validate_result(state['base'], current, self.include)

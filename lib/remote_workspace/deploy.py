@@ -24,6 +24,7 @@ def deployment_payload(profile, terminal, *, git='/usr/bin/git', git_env=None):
         'endpoint.py',
         'provider_remote.py',
         'maintenance.py',
+        'installer.py',
     )
     files = {'remote_workspace/' + name: (package / name).read_bytes() for name in names}
     for filename, module in [('endpoint.py', 'endpoint'), ('provider.py', 'provider_remote')]:

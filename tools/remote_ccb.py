@@ -55,9 +55,30 @@ def main():
         CCB_REMOTE_WORKSPACES_FILE=str(profiles),
         CCB_NO_UPDATE_CHECK='1',
     )
+    from remote_workspace.preflight import baseline_path, check, launch_environment
+
+    env = launch_environment(env, args.provider_source_home.resolve(), state, project)
+    env['CCB_REMOTE_PREFLIGHT_SOURCE'] = str(source)
     if not sys.stdin.isatty():
         env['CCB_NO_ATTACH'] = '1'
     argv = args.arguments[1:] if args.arguments[:1] == ['--'] else args.arguments
+    if argv[:1] == ['preflight']:
+        import json
+
+        if argv[1:] not in ([], ['--record']):
+            parser.error('preflight accepts only --record (explicit first enrollment)')
+        print(
+            json.dumps(check(project, profiles, source, env, record='--record' in argv), indent=2)
+        )
+        return
+    # Diagnostics, shutdown and recovery remain available when the endpoint is
+    # offline. The daemon also checks again at each remote task boundary.
+    if not argv or argv[0] in ('-s', '--simple', 'ask', 'restart'):
+        check(project, profiles, source, env)
+    if baseline_path(profiles).exists():
+        env['CCB_REMOTE_PREFLIGHT_BASELINE_HASH'] = hashlib.sha256(
+            baseline_path(profiles).read_bytes()
+        ).hexdigest()
     os.chdir(project)
     entry = source / 'ccb.py'
     if argv[:1] == ['sync']:

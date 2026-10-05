@@ -257,6 +257,15 @@ class WorkspaceSynchronizer:
         p = self.profile(name, job.agent_name)
         if context is None or context.workspace_path != p['local_workspace']:
             raise SyncError('runtime workspace does not match pinned remote profile')
+        if source := os.environ.get('CCB_REMOTE_PREFLIGHT_SOURCE'):
+            from .preflight import check
+
+            check(
+                self.layout.project_root,
+                Path(os.environ['CCB_REMOTE_WORKSPACES_FILE']),
+                Path(source),
+                os.environ,
+            )
         self.wait_for_transport(name, p)
         job_name(job.job_id)
         with self.locked(name) as root:

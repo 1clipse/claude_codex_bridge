@@ -108,6 +108,8 @@ def _install_provider_stubs(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> 
         "CCB_SESSION_FILE",
         "CCB_SESSION_ID",
         "CCB_REMOTE_WORKSPACES_FILE",
+        "CCB_REMOTE_PREFLIGHT_SOURCE",
+        "CCB_REMOTE_PREFLIGHT_BASELINE_HASH",
         "CCB_PROVIDER_SOURCE_HOME",
         "CCB_PINNED_CLI",
         "CLAUDE_CONFIG_DIR",

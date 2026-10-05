@@ -109,8 +109,27 @@ environment using the release's existing dependency manifest. It does not
 replace an installed CCB or copy provider credentials. Use that environment's
 Python for the tools below.
 
-Start the independent controller with `tools/remote_ccb.py --project PROJECT
---profiles FILE -- -s`. It uses a standalone Python environment and separate
+Enroll an inspected deployment once with `tools/remote_ccb.py --project PROJECT
+--profiles FILE -- preflight --record`, then check it with `-- preflight` and
+start with `-- -s`. The controller-owned `FILE` sibling ending in `.baseline.json`
+pins source contents, local tool paths/versions, profile/config/SSH configuration,
+runtime directory and the remote deployment/workspace/session. Changes fail
+before startup or remote dispatch. Existing baselines are never overwritten;
+archive one explicitly after reviewing an upgrade, enroll it and restart an idle
+controller. Running controllers also bind the baseline digest from startup.
+Diagnostics and recovery remain available when the endpoint is offline.
+
+The launcher normalizes PATH and the owned runtime directory, and detaches
+preflight subprocess stdin so piped `ask` text is preserved. Local prerequisites
+are Python, Git, SSH, tmux and the native CLIs of the configured local providers.
+A remote-only Claude project does not require local Codex or Claude binaries;
+the endpoint probe checks the remote tools. Local provider wrappers still require
+the normal project-command approval. Preflight identifies native executables and
+deployment, not every wrapper subprocess, model service connectivity or the
+trustworthiness of a host. If local model access needs a proxy, explicitly set
+its environment in the trusted launch script; no proxy address is hardcoded.
+
+It uses a standalone Python environment and separate
 controller state. A terminal attaches normally; noninteractive startup stays
 detached. Nested workflows should invoke the absolute `bin/ccb` from the same
 checkout (also exposed as `CCB_PINNED_CLI`), because login shells may resolve a
@@ -157,6 +176,10 @@ markers, tool results and mismatched wrappers do not activate a task.
   `refs/ccb/remote-input/<workspace>/<job>` and
   `refs/ccb/remote/<workspace>/<job>`. Both peers keep durable receipts. Lost
   prepare/collect/ack responses can be recovered without repeating model work.
+- If the controller dies after a synchronized remote child's completed terminal
+  record but before its reply, callback maintenance restores the missing reply
+  from that durable decision and uses the normal idempotent continuation path.
+  Failed, incomplete and unsynchronized children are not promoted or replayed.
 
 Default `publish="worktree"` applies files while preserving the local branch HEAD
 and index. This is required by CCB WorkgroupGitIntegration: its controller creates
@@ -179,6 +202,14 @@ contents and index/branch state; a conflicting human edit stops the transaction.
 Keep other controller-side writers off the dedicated worktree during a job.
 Per-file conflict checks and journaling do not make the entire filesystem update
 atomic against another process racing between a check and a rename.
+
+Remote prepare and collection perform a bounded metadata scan for ordinary files
+outside the configured include list. Such files stop synchronization instead of
+silently omitting a new module or output. Fixed credential/control/cache
+exclusions stay excluded; Git ignore rules do not exempt ordinary output. After
+inspecting the reported paths, move intended output into an approved directory
+and recover the same transaction. Changing a profile requires a reviewed baseline
+update. Local excluded files remain outside the input snapshot.
 
 After confirming that the remote provider is no longer writing and the original
 CCB job is terminal, use:
@@ -256,3 +287,35 @@ and verifies that local-only dispatch does not import the Linux transport.
 The optional verifier integration test requires working bubblewrap/libseccomp;
 enable it explicitly with `CCB_TEST_REMOTE_SANDBOX=1`. It is separate from the
 SSH/workspace unit tests and does not run model clients.
+
+`test/test_remote_hardening.py` SIGKILLs fixture processes at six sync and three
+terminal/reply/callback persistence windows. It checks that recovery preserves
+one worker execution, one reply and one continuation. These tests do not invoke
+a model or reboot a machine.
+
+`test/test_remote_live_capacity.py` is an opt-in real SSH test. It creates unique
+disposable endpoint directories, transfers 16 and 31.5 MiB fixtures, measures
+same-project lock waiting and recovers from a forced RPC timeout. Response
+throttling affects only the test SSH channel; it does not change host network
+shaping. Set `CCB_LIVE_CAPACITY_SETTINGS` to a controller-owned JSON file outside
+the checkout, for example:
+
+```json
+{
+  "host": "disposable-worker-ssh-alias",
+  "remote_parent": "/home/worker/ccb-capacity-tests",
+  "ssh_config": "/private/ssh-config",
+  "python": "/usr/bin/python3",
+  "git": "/usr/bin/git",
+  "tmux": "/usr/bin/tmux",
+  "env": {},
+  "evidence": "/tmp/ccb-capacity-evidence"
+}
+```
+
+Create the local evidence directory and a writable remote parent beforehand.
+`host`, `remote_parent` and `evidence` are required; other fields are optional.
+Run `python -m pytest -q test/test_remote_live_capacity.py` explicitly. Each run
+leaves only its uniquely named test endpoints for inspection and later cleanup;
+it never targets an existing worker endpoint or runs Claude. Do not commit local
+settings, private addresses, credentials or raw deployment logs as test fixtures.

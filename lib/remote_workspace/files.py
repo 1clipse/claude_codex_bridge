@@ -9,7 +9,7 @@ from pathlib import Path
 import stat
 import uuid
 
-from .objects import MAX_BYTES, MAX_OBJECTS, SyncError, safe_path
+from .objects import MAX_BYTES, MAX_OBJECTS, SyncError, allowed, safe_path
 
 DIR_FLAGS = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
 
@@ -110,6 +110,47 @@ def scan(root, include):
             except FileNotFoundError:
                 pass
     return files
+
+
+def check_scope(root, include):
+    """Reject omitted project files without reading their contents or symlinks.
+
+    Fixed control/credential/cache exclusions in safe_path remain excluded.
+    Git ignore rules do not silently authorize discarding task output.
+    """
+    omitted = []
+    visited = 0
+    with directory(root) as root_fd:
+
+        def visit(fd, name, path):
+            nonlocal visited
+            visited += 1
+            if visited > MAX_OBJECTS:
+                raise SyncError('scope inspection file budget exceeded')
+            try:
+                safe_path(path)
+            except SyncError:
+                return
+            st = os.stat(name, dir_fd=fd, follow_symlinks=False)
+            if stat.S_ISDIR(st.st_mode):
+                child = os.open(name, DIR_FLAGS, dir_fd=fd)
+                try:
+                    for entry in sorted(os.listdir(child)):
+                        visit(child, entry, path + '/' + entry)
+                finally:
+                    os.close(child)
+            elif not allowed(path, include):
+                omitted.append(path)
+
+        for name in sorted(os.listdir(root_fd)):
+            visit(root_fd, name, name)
+    if omitted:
+        raise SyncError(
+            'files outside synchronization allowlist (not collected): '
+            + ', '.join(omitted[:25])
+            + (' ...' if len(omitted) > 25 else '')
+            + '; move required output into approved paths before recovery'
+        )
 
 
 def apply_files(root, before, after, *, recovery=False):
