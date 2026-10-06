@@ -18,6 +18,10 @@ class SyncError(RuntimeError):
     pass
 
 
+class ExcludedPath(SyncError):
+    """An explicitly excluded control, credential, cache or authority path."""
+
+
 MAX_BYTES = 32 * 1024 * 1024
 MAX_OBJECTS = 12000
 MAX_COMMITS = 128
@@ -60,7 +64,7 @@ def safe_path(value: str) -> str:
         raise SyncError('invalid path')
     parts = value.split('/')
     if value.casefold() == 'docs/plantree' or value.casefold().startswith('docs/plantree/'):
-        raise SyncError('CCB plan authority is not a project-file payload')
+        raise ExcludedPath('CCB plan authority is not a project-file payload')
     if (
         not value
         or len(parts) > 32
@@ -82,7 +86,7 @@ def safe_path(value: str) -> str:
             or name.startswith(('.env', '.git~', 'git~', '.ccb-'))
             or name.endswith(('.pem', '.key'))
         ):
-            raise SyncError(f'control or credential path is excluded: {value}')
+            raise ExcludedPath(f'control or credential path is excluded: {value}')
     return value
 
 

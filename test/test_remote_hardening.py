@@ -448,3 +448,77 @@ def test_scope_check_does_not_follow_omitted_symlink(sync_case):
     result = c.dispatcher.complete(job.job_id, c.decision(reply='done'))
     assert result.status is JobStatus.FAILED
     assert 'omitted-link' in read_json(c.service.state_root('demo') / 'state.json')['error']
+
+
+@pytest.mark.parametrize('publish', ['worktree', 'commits'])
+@pytest.mark.parametrize('name', ['result:final.txt', 'result\\final.txt', 'result.txt '])
+def test_unsupported_output_blocks_success_and_recovers_after_rename(sync_case, name, publish):
+    c = sync_case
+    c.p['publish'] = publish
+    c.profile.write_text(json.dumps({'demo': c.p}))
+    job = c.submit()
+    output = c.remote / 'workspace/outputs'
+    output.mkdir()
+    invalid = output / name
+    invalid.write_text('required output\n')
+    result = c.dispatcher.complete(job.job_id, c.decision(reply='done'))
+    assert result.status is JobStatus.FAILED
+    state = read_json(c.service.state_root('demo') / 'state.json')
+    assert state['blocked'] and 'unsafe path' in state['error']
+    assert not (c.remote / (job.job_id + '.result.json')).exists()
+    invalid.rename(output / 'result.txt')
+    assert c.service.recover('demo', 'worker', job.job_id)['status'] == 'synced'
+    assert (c.workspace / 'outputs/result.txt').read_text() == 'required output\n'
+    assert c.dispatcher.get(job.job_id).status is JobStatus.FAILED
+
+
+@pytest.mark.parametrize('publish', ['worktree', 'commits'])
+@pytest.mark.parametrize('name', ['input:final.txt', 'input\\final.txt', 'input.txt '])
+def test_unsupported_input_blocks_before_remote_dispatch(sync_case, name, publish):
+    c = sync_case
+    c.p['publish'] = publish
+    c.profile.write_text(json.dumps({'demo': c.p}))
+    (c.workspace / 'src' / name).write_text('required input\n')
+    job = c.submit()
+    assert job.status is JobStatus.FAILED
+    assert not c.execution.started
+    assert not c.transport.calls
+
+
+def test_excluded_paths_remain_excluded_in_scan_and_scope(tmp_path):
+    from remote_workspace.files import check_scope, scan
+    root = tmp_path / 'payload'
+    root.mkdir()
+    for relative in ['src/.env', 'src/.claude/settings.json', 'src/__pycache__/cache.pyc',
+                     'src/key.pem', 'docs/plantree/state.md']:
+        path = root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text('excluded sentinel')
+    (root / 'src/result.txt').write_text('result')
+    check_scope(root, ['src', 'docs'])
+    assert set(scan(root, ['src', 'docs'])) == {'src/result.txt'}
+
+
+@pytest.mark.parametrize('reader', ['scan', 'check_scope'])
+@pytest.mark.parametrize('case', ['directory-name', 'depth', 'length'])
+def test_unsupported_paths_are_not_treated_as_exclusions(tmp_path, reader, case):
+    from remote_workspace import files
+    root = tmp_path / 'payload'
+    root.mkdir()
+    relative = {
+        'directory-name': 'src/result:folder/output.txt',
+        'depth': 'src/' + 'd/' * 32 + 'output.txt',
+        'length': 'src/' + ('d' * 200 + '/') * 11 + 'output.txt',
+    }[case]
+    output = root / relative
+    output.parent.mkdir(parents=True)
+    output.write_text('required result')
+    with pytest.raises(SyncError):
+        getattr(files, reader)(root, ['src'])
+
+
+def test_explicit_exclusion_is_still_rejected_as_wire_payload():
+    from remote_workspace.objects import ExcludedPath, safe_path
+    with pytest.raises(ExcludedPath):
+        safe_path('src/.env')
+    assert issubclass(ExcludedPath, SyncError)

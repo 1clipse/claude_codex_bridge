@@ -54,6 +54,11 @@ socket after a crash and preserved FIFO through a real 180-second draft wait.
 OMP model completion remains unverified because the configured service returned
 402 (insufficient balance); delivery was independently confirmed.
 
+## PR 366 follow-up
+
+[Sync path repair](topics/pr366-sync-path-repair.md): prevent successful remote
+completion after unsupported ordinary paths were silently omitted.
+
 ## Current Input-Guard Slice
 
 The owner requested a local v8.7.0 source commit and bilingual README coverage

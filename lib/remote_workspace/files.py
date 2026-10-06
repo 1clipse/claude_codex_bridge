@@ -9,7 +9,7 @@ from pathlib import Path
 import stat
 import uuid
 
-from .objects import MAX_BYTES, MAX_OBJECTS, SyncError, allowed, safe_path
+from .objects import MAX_BYTES, MAX_OBJECTS, ExcludedPath, SyncError, allowed, safe_path
 
 DIR_FLAGS = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
 
@@ -81,7 +81,7 @@ def scan(root, include):
             nonlocal total
             try:
                 safe_path(path)
-            except SyncError:
+            except ExcludedPath:
                 return  # Always exclude control files and credential locations.
             try:
                 st = os.stat(name, dir_fd=fd, follow_symlinks=False)
@@ -129,7 +129,7 @@ def check_scope(root, include):
                 raise SyncError('scope inspection file budget exceeded')
             try:
                 safe_path(path)
-            except SyncError:
+            except ExcludedPath:
                 return
             st = os.stat(name, dir_fd=fd, follow_symlinks=False)
             if stat.S_ISDIR(st.st_mode):
