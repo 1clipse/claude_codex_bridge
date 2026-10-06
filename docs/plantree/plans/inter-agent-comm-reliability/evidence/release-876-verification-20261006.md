@@ -42,8 +42,10 @@ Repeated Tests 37413731415 failed only in macOS py3.11:
 `test_managed_pane_command_ignores_stale_socket_node` exceeded its 15-second
 subprocess timeout. Result: 7504 passed, 125 skipped, 42 deselected, 1 failed.
 The socket launcher code is unchanged by this release and the same commit's
-prepublication run passed. A single failed-jobs rerun was requested; until it
-finishes this is not an all-green post-push claim. No tag or package was replaced.
+prepublication run passed. The failed-jobs rerun was cancelled by the documentation push sharing the
+main-branch concurrency group. A replacement exact-tag workflow was requested
+on v8.7.6, isolated from main pushes; until it finishes this is not an all-green
+post-push claim. No tag or package was replaced.
 
 Local raw verification artifacts: /var/tmp/ccb-876-verification.
 Issue 356 post-paste symptom remains unconfirmed; publication does not close it.
