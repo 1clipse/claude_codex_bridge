@@ -71,7 +71,9 @@ def _extract_wsl_path_from_unc_like_path(path: str) -> str | None:
 
 
 def _run(*args, **kwargs):
-    kwargs.update(_subprocess_kwargs())
+    # Explicit call-site options take precedence over wrapper defaults.
+    for key, value in _subprocess_kwargs().items():
+        kwargs.setdefault(key, value)
     import subprocess as _sp
 
     return _sp.run(*args, **kwargs)

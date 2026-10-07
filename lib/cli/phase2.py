@@ -70,6 +70,7 @@ def maybe_handle_phase2(
     cwd: Path | None = None,
     stdout: TextIO | None = None,
     stderr: TextIO | None = None,
+    dispatch_fn=None,
 ) -> int:
     config_command = _looks_like_config_validate(argv)
     out = stdout or sys.stdout
@@ -87,7 +88,7 @@ def maybe_handle_phase2(
             raise
         if _command_requires_bootstrap_config(command):
             ensure_bootstrap_project_config(context.project.project_root)
-        return _dispatch(context, command, out)
+        return (dispatch_fn or _dispatch)(context, command, out)
     except Exception as exc:
         return handle_phase2_exception(err, command_kind=command.kind, exc=exc)
 

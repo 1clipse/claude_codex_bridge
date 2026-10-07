@@ -243,6 +243,7 @@ def run_cli_entrypoint(
     cwd: Path,
     stdout: TextIO,
     stderr: TextIO,
+    phase2_handler=None,
 ) -> int:
     tokens = list(argv or [])
     _log_received_argv(tokens, stderr=stderr)
@@ -314,5 +315,5 @@ def run_cli_entrypoint(
     if startup_update_result is not None:
         return startup_update_result
 
-    return maybe_handle_phase2(tokens, cwd=cwd, stdout=stdout, stderr=stderr)
+    return (phase2_handler or maybe_handle_phase2)(tokens, cwd=cwd, stdout=stdout, stderr=stderr)
 __all__ = ["run_cli_entrypoint"]

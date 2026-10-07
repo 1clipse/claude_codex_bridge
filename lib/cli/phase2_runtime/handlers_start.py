@@ -86,7 +86,7 @@ def handle_config_ui(context, command, out, services) -> int:
     return 0
 
 
-def handle_start(context, command, out, services) -> int:
+def handle_start(context, command, out, services, *, attach_fn=None) -> int:
     _ensure_project_commands_approved(context, out, services)
     # When the project config selects the Herdr backend, make sure a usable
     # capability report is injected before backend selection.  The installed
@@ -108,7 +108,7 @@ def handle_start(context, command, out, services) -> int:
     else:
         summary = services.start_agents(context, command)
     if interactive_attach:
-        attach_started_project_namespace(context)
+        (attach_fn or attach_started_project_namespace)(context)
         return 0
     services.write_lines(out, services.render_start(summary))
     return 0

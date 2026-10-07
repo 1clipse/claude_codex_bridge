@@ -156,7 +156,7 @@ def _source_runtime_allowed(root: Path, cwd: Path, argv: list[str]) -> tuple[boo
     )
 
 
-def main():
+def main(*, entrypoint=None):
     mark_ccb_main(time.perf_counter_ns())
     allowed, reason = _source_runtime_allowed(script_dir, Path.cwd(), sys.argv[1:])
     if not allowed:
@@ -169,7 +169,7 @@ def main():
             file=sys.stderr,
         )
         return 1
-    return run_cli_entrypoint(
+    return (entrypoint or run_cli_entrypoint)(
         sys.argv[1:],
         version=VERSION,
         script_root=script_dir,

@@ -1,0 +1,37 @@
+name: CLI entrypoint contract
+
+on:
+  pull_request:
+    paths:
+      - 'ccb.py'
+      - 'lib/cli/**'
+      - 'lib/terminal_runtime/api.py'
+      - 'test/test_cli_dispatch_injection.py'
+      - '.github/workflows/cli-entrypoint-contract.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install pytest tomli jsonschema --requirement deploy/mobile-relay/requirements.txt
+      - run: >-
+          python -m pytest -q
+          test/test_cli_dispatch_injection.py
+          test/test_v2_phase2_wiring.py
+          test/test_v2_start_foreground.py
+          test/test_terminal_runtime_tmux_attach.py
+          test/test_terminal_runtime_tmux_respawn.py
+          test/test_terminal_runtime_backend_selection.py
