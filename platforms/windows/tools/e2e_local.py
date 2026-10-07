@@ -13,6 +13,7 @@ import subprocess
 import sys
 import time
 import re
+import tempfile
 from urllib.request import Request, urlopen
 from urllib.parse import urlsplit
 from concurrent.futures import ThreadPoolExecutor
@@ -21,6 +22,19 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3] / 'lib'))
 from ccbd.socket_client import CcbdClient
 
 ROOT = Path(__file__).resolve().parents[3]
+
+
+def prepare_project(project: Path) -> None:
+    marker = project / '.ccb-native-e2e'
+    if project.exists() and not marker.is_file() and any(project.iterdir()):
+        raise ValueError('existing nonempty project is not marked as a disposable native E2E project')
+    project.mkdir(parents=True, exist_ok=True)
+    anchor = project / '.ccb'
+    anchor.mkdir(exist_ok=True)
+    config = anchor / 'ccb.config'
+    if not config.exists():
+        config.write_text('version = 2\n[windows]\nmain = "codex:codex; claude:claude"\n[runtime.mux]\nbackend = "herdr"\n', encoding='utf-8')
+    marker.write_text('Disposable native Windows CCB E2E workspace\n', encoding='utf-8')
 
 
 def environment(herdr: Path, sh: Path) -> dict[str, str]:
@@ -42,7 +56,9 @@ def environment(herdr: Path, sh: Path) -> dict[str, str]:
 
 class Runner:
     def __init__(self, project, output, env):
-        self.project, self.output, self.env = project, output, env
+        self.project, self.output, self.env = project.resolve(), output, env
+        if not (self.project / '.ccb-native-e2e').is_file():
+            raise ValueError('Requires a marked disposable native E2E project')
         report = output / 'report.json'
         self.results = json.loads(report.read_text(encoding='utf-8')) if report.exists() else []
         output.mkdir(parents=True, exist_ok=True)
@@ -109,41 +125,43 @@ class Runner:
         gui = subprocess.Popen([str(wezterm.with_name('wezterm-gui.exe')), '--config-file', str(config),
                                 'start', '--always-new-process'], cwd=self.project, env=gui_env,
                                creationflags=subprocess.CREATE_NO_WINDOW)
-        self.gui_env = dict(gui_env, WEZTERM_UNIX_SOCKET=str(Path(os.environ['USERPROFILE']) / '.local/share/wezterm' / f'gui-sock-{gui.pid}'))
-        self.wezterm = wezterm
-        (self.output / 'gui.json').write_text(json.dumps({'pid':gui.pid, 'socket':self.gui_env['WEZTERM_UNIX_SOCKET'], 'config':str(config)}), encoding='utf-8')
-        deadline = time.monotonic() + 45
-        visible = ''
-        while time.monotonic() < deadline:
-            result = self.wez('get-text', '--pane-id', '0')
-            visible = result.stdout
-            if 'Codex' in visible or 'Claude' in visible:
-                break
-            time.sleep(1)
-        time.sleep(8)  # Regression: original attach died after five seconds.
-        visible = self.wez('get-text', '--pane-id', '0').stdout
-        (self.output / 'gui-start.txt').write_text(visible, encoding='utf-8')
-        self.record('native_exe_foreground_survives_8s', gui.poll() is None and ('Codex' in visible or 'Claude' in visible)
-                    and 'Process exited' not in visible)
-        panes = [p for p in self.panes() if (p.get('tokens') or {}).get('ccb_role') == 'agent']
-        focused = next((p for p in panes if p.get('focused')), None)
-        if focused is None:
-            raise RuntimeError('no focused test agent pane')
-        pane_id = focused['pane_id']
-        for name, value, no_paste in [('unicode_paste', 'CCB测试_中文 mixed 123 !@#', False),
-                                      ('ascii_keys', 'CCB_KEYS_9876543210', True),
-                                      ('punctuation_paste', 'CCB >>>===<<;;:98765410/..-,++*)', False)]:
-            args = ['send-text', '--pane-id', '0'] + (['--no-paste'] if no_paste else [])
-            sent = self.wez(*args, input_text=value)
-            time.sleep(1)
-            content = self.herdr('pane', 'read', pane_id, '--lines', '12', '--format', 'text').stdout
-            (self.output / (name + '.txt')).write_text(content, encoding='utf-8')
-            self.record(name, sent.returncode == 0 and value in content)
-            self.herdr('pane', 'send-keys', pane_id, 'ctrl+u')
-            time.sleep(.5)
-        before = self.identity()
-        gui.terminate()
-        gui.wait(timeout=15)
+        try:
+            self.gui_env = dict(gui_env, WEZTERM_UNIX_SOCKET=str(Path(os.environ['USERPROFILE']) / '.local/share/wezterm' / f'gui-sock-{gui.pid}'))
+            self.wezterm = wezterm
+            (self.output / 'gui.json').write_text(json.dumps({'pid':gui.pid, 'socket':self.gui_env['WEZTERM_UNIX_SOCKET'], 'config':str(config)}), encoding='utf-8')
+            deadline = time.monotonic() + 45
+            visible = ''
+            while time.monotonic() < deadline:
+                result = self.wez('get-text', '--pane-id', '0')
+                visible = result.stdout
+                if 'Codex' in visible or 'Claude' in visible:
+                    break
+                time.sleep(1)
+            time.sleep(8)  # Regression: original attach died after five seconds.
+            visible = self.wez('get-text', '--pane-id', '0').stdout
+            (self.output / 'gui-start.txt').write_text(visible, encoding='utf-8')
+            self.record('native_exe_foreground_survives_8s', gui.poll() is None and ('Codex' in visible or 'Claude' in visible)
+                        and 'Process exited' not in visible)
+            panes = [p for p in self.panes() if (p.get('tokens') or {}).get('ccb_role') == 'agent']
+            focused = next((p for p in panes if p.get('focused')), None)
+            if focused is None:
+                raise RuntimeError('no focused test agent pane')
+            pane_id = focused['pane_id']
+            for name, value, no_paste in [('unicode_paste', 'CCB测试_中文 mixed 123 !@#', False),
+                                          ('ascii_keys', 'CCB_KEYS_9876543210', True),
+                                          ('punctuation_paste', 'CCB >>>===<<;;:98765410/..-,++*)', False)]:
+                args = ['send-text', '--pane-id', '0'] + (['--no-paste'] if no_paste else [])
+                sent = self.wez(*args, input_text=value)
+                time.sleep(1)
+                content = self.herdr('pane', 'read', pane_id, '--lines', '12', '--format', 'text').stdout
+                (self.output / (name + '.txt')).write_text(content, encoding='utf-8')
+                self.record(name, sent.returncode == 0 and value in content)
+                self.herdr('pane', 'send-keys', pane_id, 'ctrl+u')
+                time.sleep(.5)
+            before = self.identity()
+        finally:
+            gui.terminate()
+            gui.wait(timeout=15)
         time.sleep(8)
         result = self.cli('herdr', 'open', '--no-attach', '--wait-ready')
         self.record('ui_close_preserves_agents', result.returncode == 0 and before == self.identity())
@@ -158,7 +176,7 @@ class Runner:
         from playwright.sync_api import sync_playwright
         log_path = self.output / 'config-ui-private.log'
         with log_path.open('w', encoding='utf-8') as log:
-            proc = subprocess.Popen([sys.executable, '-u', str(ROOT / 'ccb.py'), 'config', 'ui', '--no-open'],
+            proc = subprocess.Popen([sys.executable, '-u', str(ROOT / 'platforms/windows/ccb.py'), 'config', 'ui', '--no-open'],
                                     cwd=self.project, env=self.env, stdout=log, stderr=log,
                                     creationflags=subprocess.CREATE_NO_WINDOW)
             try:
@@ -258,21 +276,42 @@ class Runner:
                     and len(self.identity()) == 2, exit_codes=[r.returncode for r in results])
 
     def failure_checks(self):
-        invalid = self.project.parent / 'invalid-config-e2e'
-        invalid.mkdir(exist_ok=True)
-        (invalid / '.ccb').mkdir(exist_ok=True)
-        (invalid / '.ccb/ccb.config').write_text('version = [broken TOML', encoding='utf-8')
-        bad = subprocess.run([sys.executable, str(ROOT/'platforms/windows/ccb.py'), 'herdr', 'open', '--no-attach', '--wait-ready'],
-                             cwd=invalid, env=self.env, capture_output=True, encoding='utf-8',
-                             timeout=30, creationflags=subprocess.CREATE_NO_WINDOW)
-        self.record('invalid_config_fails', bad.returncode != 0, exit_code=bad.returncode)
-        missing = subprocess.run(['powershell.exe','-NoProfile','-ExecutionPolicy','Bypass','-File',
-                                  str(ROOT/'platforms/windows/start.ps1'), '-ProjectRoot',str(self.project),
-                                  '-InstallRoot',str(invalid/'missing-install'),'-NoPause','-NoAttach'],
-                                 env=self.env, capture_output=True, encoding='utf-8', errors='replace',
-                                 timeout=15, creationflags=subprocess.CREATE_NO_WINDOW)
-        self.record('missing_launcher_fails_visibly', missing.returncode != 0 and 'launcher is missing' in missing.stdout,
-                    exit_code=missing.returncode)
+        from storage.paths import PathLayout
+
+        temporary = tempfile.TemporaryDirectory(prefix='invalid-config-', dir=self.project)
+        with temporary as directory:
+            invalid = Path(directory).resolve()
+            invalid.relative_to(self.project)
+            session = PathLayout(invalid).ccbd_tmux_session_name
+            try:
+                (invalid / '.ccb').mkdir(exist_ok=True)
+                (invalid / '.ccb/ccb.config').write_text('version = [broken TOML', encoding='utf-8')
+                bad = subprocess.run([sys.executable, str(ROOT/'platforms/windows/ccb.py'), 'herdr', 'open', '--no-attach', '--wait-ready'],
+                                     cwd=invalid, env=self.env, capture_output=True, encoding='utf-8',
+                                     timeout=30, creationflags=subprocess.CREATE_NO_WINDOW)
+                self.record('invalid_config_fails', bad.returncode != 0, exit_code=bad.returncode)
+                missing = subprocess.run(['powershell.exe','-NoProfile','-ExecutionPolicy','Bypass','-File',
+                                          str(ROOT/'platforms/windows/start.ps1'), '-ProjectRoot',str(self.project),
+                                          '-InstallRoot',str(invalid/'missing-install'),'-NoPause','-NoAttach'],
+                                         env=self.env, capture_output=True, encoding='utf-8', errors='replace',
+                                         timeout=15, creationflags=subprocess.CREATE_NO_WINDOW)
+                self.record('missing_launcher_fails_visibly', missing.returncode != 0 and 'launcher is missing' in missing.stdout,
+                            exit_code=missing.returncode)
+            finally:
+                subprocess.run([self.env['CCB_HERDR_EXE'], '--session', session, 'server', 'stop'],
+                               env=self.env, capture_output=True, timeout=15,
+                               creationflags=subprocess.CREATE_NO_WINDOW)
+                # Herdr acknowledges shutdown before its process has necessarily
+                # released the cwd handle. Keep cleanup bounded on Windows.
+                deadline = time.monotonic() + 5
+                while True:
+                    try:
+                        temporary.cleanup()
+                        break
+                    except PermissionError:
+                        if time.monotonic() >= deadline:
+                            raise
+                        time.sleep(.1)
         from platforms.windows.herdr.runtime.cli import HerdrCliRequestAdapter
         from terminal_runtime.mux_backend_contract import MuxCommandErrorV2
         adapter = HerdrCliRequestAdapter(session_name=self.state()['namespace_session_name'],
@@ -306,16 +345,10 @@ def main():
     args = parser.parse_args()
     if sys.platform != 'win32':
         parser.error('native Windows required')
-    args.project.mkdir(parents=True, exist_ok=True)
-    marker = args.project / '.ccb-native-e2e'
-    anchor = args.project / '.ccb'
-    anchor.mkdir(exist_ok=True)
-    config = anchor / 'ccb.config'
-    if config.exists() and not marker.exists():
-        parser.error('existing project is not marked as a disposable native E2E project')
-    if not config.exists():
-        config.write_text('version = 2\n[windows]\nmain = "codex:codex; claude:claude"\n[runtime.mux]\nbackend = "herdr"\n', encoding='utf-8')
-        marker.write_text('Disposable native Windows CCB E2E workspace\n', encoding='utf-8')
+    try:
+        prepare_project(args.project.resolve())
+    except ValueError as exc:
+        parser.error(str(exc))
     runner = Runner(args.project.resolve(), args.output.resolve(), environment(args.herdr, args.sh))
     first_result = len(runner.results)
     if args.stage == 'cold':

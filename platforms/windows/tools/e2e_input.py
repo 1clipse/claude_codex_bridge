@@ -48,8 +48,8 @@ def main():
     runner.wezterm = args.wezterm
     runner.gui_env = dict(env, WEZTERM_UNIX_SOCKET=str(Path.home() / '.local/share/wezterm' / f'gui-sock-{gui.pid}'))
     first_result = len(runner.results)
-    identities = runner.identity()
     try:
+        identities = runner.identity()
         deadline = time.monotonic() + 60
         while time.monotonic() < deadline:
             visible = runner.wez('get-text', '--pane-id', '0').stdout

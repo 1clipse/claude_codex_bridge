@@ -300,6 +300,8 @@ def test_build_capability_report_covers_known_capabilities() -> None:
 
 
 def _stub_bootstrap_ok(monkeypatch) -> None:
+    monkeypatch.setattr('platforms.windows.herdr.entrypoint._open_session',
+                        lambda *a, **kw: 'ccb-test')
     monkeypatch.setattr(
         'platforms.windows.herdr.bootstrap.ensure_herdr_bootstrap_env',
         lambda **kwargs: {'ok': True, 'warnings': []},

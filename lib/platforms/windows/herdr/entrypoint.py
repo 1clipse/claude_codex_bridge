@@ -82,11 +82,35 @@ def handle_herdr_open(context, command, out, services) -> int:
     return rc
 
 
+def _open_session(context, requested, *, running):
+    requested = str(requested or '').strip() or None
+    if not running:
+        session = _ccbd_herdr_session_name(context)
+        if requested and requested != session:
+            raise RuntimeError(
+                f'This native project requires Herdr session {session!r}; '
+                'custom session names are not supported by the daemon. '
+                'Omit --herdr-session to use the project session.'
+            )
+        return session
+    from ccbd.services.project_namespace_state_runtime.stores import ProjectNamespaceStateStore
+
+    state = ProjectNamespaceStateStore(context.paths).load()
+    recorded = str(getattr(state, 'namespace_session_name', '') or '').strip()
+    if not recorded:
+        raise RuntimeError('Cannot reconnect: the live daemon has no recorded Herdr session.')
+    if requested and requested != recorded:
+        raise RuntimeError(
+            f'This project already uses Herdr session {recorded!r}; '
+            'omit --herdr-session to reconnect to that session.'
+        )
+    return recorded
+
+
 def _prepare_herdr_open(context, command, out, services) -> int:
     """``ccb herdr open`` — WezTerm-launched Herdr managed startup bootstrap.
 
-    Locates Herdr, ensures the server is running (auto-starting it when
-    ``--wait-ready`` is used so ``ccb8.ps1`` no longer pre-starts it), injects
+    Locates Herdr, starts the project server for a cold open, injects
     the herdr runtime env, then starts agents through the herdr backend
     (managed mode; CCB stays the provider/recovery authority). Foreground
     attach by default; ``--no-attach`` starts headless.  ``--wait-ready`` blocks
@@ -99,13 +123,14 @@ def _prepare_herdr_open(context, command, out, services) -> int:
     if running and backend != 'herdr':
         _print_herdr_daemon_conflict(backend)
         return 1
-    # P0: let Python own the Herdr server lifecycle.  When nothing is running,
-    # start the ccbd-derived session server here instead of in ccb8.ps1.
+    # The daemon creates its namespace in the project-derived session. A live
+    # daemon must reconnect to its recorded server without creating a new one.
+    session = _open_session(context, command.herdr_session, running=running)
     result = ensure_herdr_bootstrap_env(
         herdr_exe=command.herdr_exe,
-        herdr_session=command.herdr_session or _ccbd_herdr_session_name(context),
-        auto_start_server=True,
-        start_session=_ccbd_herdr_session_name(context),
+        herdr_session=session,
+        auto_start_server=not running,
+        start_session=session,
     )
     if result.get('ok') is not True:
         print(str(result.get('reason') or 'herdr open failed'), file=sys.stderr)

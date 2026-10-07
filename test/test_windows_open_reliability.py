@@ -13,7 +13,9 @@ from terminal_runtime.mux_backend_contract import MuxCommandErrorV2
 
 
 def setup_open(monkeypatch, tmp_path, *, running=True, ready=True):
-    context = SimpleNamespace(project=SimpleNamespace(project_root=tmp_path))
+    context = SimpleNamespace(project=SimpleNamespace(project_root=tmp_path), paths=None)
+    monkeypatch.setattr('ccbd.services.project_namespace_state_runtime.stores.ProjectNamespaceStateStore',
+                        lambda paths: SimpleNamespace(load=lambda: SimpleNamespace(namespace_session_name='ccb-test')))
     monkeypatch.setattr('platforms.windows.herdr.bootstrap.ensure_herdr_bootstrap_env',
                         lambda **kwargs: {'ok': True, 'warnings': []})
     monkeypatch.setattr(handlers, '_daemon_running_and_backend',
@@ -147,3 +149,48 @@ def test_requested_session_does_not_fall_back_to_another_project(monkeypatch):
     monkeypatch.setattr(bootstrap, 'query_herdr_server_status', query)
     assert bootstrap._resolve_running_server('herdr', 'ccb-this-project') == (None, None, None)
     assert seen == ['ccb-this-project']
+
+
+@pytest.mark.parametrize('running', [False, True])
+def test_owned_session_is_used_for_both_lookup_and_start(monkeypatch, tmp_path, running):
+    context = setup_open(monkeypatch, tmp_path, running=running)
+    context.paths = SimpleNamespace(ccbd_tmux_session_name='ccb-default')
+    monkeypatch.setattr('ccbd.services.project_namespace_state_runtime.stores.ProjectNamespaceStateStore',
+                        lambda paths: SimpleNamespace(load=lambda: SimpleNamespace(namespace_session_name='custom-session')))
+    calls = []
+    monkeypatch.setattr('platforms.windows.herdr.bootstrap.ensure_herdr_bootstrap_env',
+                        lambda **kw: calls.append(kw) or {'ok': True})
+    monkeypatch.setattr(handlers, 'handle_start', lambda *a: 0)
+    expected = 'custom-session' if running else 'ccb-default'
+    command = ParsedHerdrOpenCommand(project=None, no_attach=True, herdr_session=expected)
+    assert handlers.handle_herdr_open(context, command, StringIO(), None) == 0
+    assert calls[0]['herdr_session'] == calls[0]['start_session'] == expected
+    assert calls[0]['auto_start_server'] is (not running)
+
+
+def test_reconnect_uses_recorded_custom_session_and_rejects_switch(monkeypatch, tmp_path):
+    context = setup_open(monkeypatch, tmp_path)
+    context.paths = SimpleNamespace(ccbd_tmux_session_name='ccb-default')
+    monkeypatch.setattr('ccbd.services.project_namespace_state_runtime.stores.ProjectNamespaceStateStore',
+                        lambda paths: SimpleNamespace(load=lambda: SimpleNamespace(namespace_session_name='custom-session')))
+    calls = []
+    monkeypatch.setattr('platforms.windows.herdr.bootstrap.ensure_herdr_bootstrap_env',
+                        lambda **kw: calls.append(kw) or {'ok': True})
+    command = ParsedHerdrOpenCommand(project=None, no_attach=True)
+    assert handlers.handle_herdr_open(context, command, StringIO(), None) == 0
+    assert calls[0]['herdr_session'] == 'custom-session'
+    calls.clear()
+    with pytest.raises(RuntimeError, match='already uses Herdr session'):
+        handlers.handle_herdr_open(context, ParsedHerdrOpenCommand(
+            project=None, no_attach=True, herdr_session='other-session'), StringIO(), None)
+    assert not calls
+
+
+def test_cold_open_rejects_unsupported_session_before_starting_server(monkeypatch, tmp_path):
+    context = setup_open(monkeypatch, tmp_path, running=False)
+    context.paths = SimpleNamespace(ccbd_tmux_session_name='ccb-default')
+    monkeypatch.setattr('platforms.windows.herdr.bootstrap.ensure_herdr_bootstrap_env',
+                        lambda **kw: pytest.fail('must not create a foreign server'))
+    with pytest.raises(RuntimeError, match='custom session names are not supported'):
+        handlers.handle_herdr_open(context, ParsedHerdrOpenCommand(
+            project=None, no_attach=True, herdr_session='other-session'), StringIO(), None)

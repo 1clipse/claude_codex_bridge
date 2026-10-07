@@ -12,6 +12,12 @@ opening reconnects rather than sending another start/restore RPC. A busy socket
 is not evidence that another startup is safe. An explicit management operation
 is required to restart or reconfigure an existing runtime.
 
+Cold opens use the daemon's project-derived session name. A different
+`--herdr-session` is rejected before starting any server: the shared daemon
+does not support assigning an arbitrary session name. Reopens use the session
+recorded by the live daemon and reject conflicting explicit names. Reopening
+does not recreate a missing Herdr server behind a still-running daemon.
+
 Interactive attachment inherits the invoking console and lasts until detach;
 it does not spawn a second hidden UI or impose a five-second lifetime. A failed
 attachment raises an error. `--wait-ready` requires a live namespace ping and
@@ -33,6 +39,10 @@ closed. This is a boundary guard, not atomic process replacement in Herdr.
 disposable project and real provider processes. Existing projects must carry
 the `.ccb-native-e2e` marker created by its initial setup. Never mark a normal
 work project as disposable. The `lifecycle` stage stops the entire test project.
+Unmarked nonempty directories are rejected even when they have no `ccb.config`.
+Failure checks use a unique directory within the disposable project, stop their
+own Herdr server and allow a bounded delay for Windows to release its directory
+handle before cleanup. Test GUIs also close when a check raises an exception.
 
 Run with Python and the runtime dependencies installed; `config` additionally
 needs Python Playwright and a local Edge browser. Example parameters:
