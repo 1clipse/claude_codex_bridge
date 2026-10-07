@@ -23,7 +23,7 @@ def test_native_dispatch_only_overrides_owned_commands(monkeypatch, kind):
     command = SimpleNamespace(kind=kind)
     assert native._native_dispatch('context', command, 'out') == 7
     assert calls[0][0] == ('context', command, 'out', services)
-    assert calls[0][1] == ({'attach_fn': native.attach_started_project_namespace} if kind == 'start' else {})
+    assert calls[0][1] == {}
 
 
 def test_native_foreground_reuses_terminal_without_spawning_ui(monkeypatch):

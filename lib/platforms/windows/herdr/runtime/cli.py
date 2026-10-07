@@ -27,6 +27,7 @@ class HerdrCliRequestAdapter:
         session_name: str,
         herdr_executable: str | None = None,
         run_fn: Callable[..., subprocess.CompletedProcess] = subprocess.run,
+        foreground_run_fn: Callable[..., subprocess.CompletedProcess] | None = None,
         popen_fn: Callable[..., subprocess.Popen] = subprocess.Popen,
         which_fn: Callable[[str], str | None] = shutil.which,
         socket_ref: str | None = None,
@@ -35,6 +36,9 @@ class HerdrCliRequestAdapter:
         self._session_name = session_name
         self._herdr_executable = herdr_executable
         self._run_fn = run_fn
+        # Control wrappers may force CREATE_NO_WINDOW. Interactive attachment
+        # needs an independent runner that inherits the invoking console.
+        self._foreground_run_fn = foreground_run_fn or subprocess.run
         self._popen_fn = popen_fn
         self._which_fn = which_fn
         self._socket_ref = str(socket_ref or "").strip() or None
@@ -963,7 +967,7 @@ class HerdrCliRequestAdapter:
         executable = self._resolve_executable()
         command = [executable, "session", "attach", session_name]
         try:
-            self._run_fn(command, check=True, creationflags=0, env=_env_without_xdg_redirects())
+            self._foreground_run_fn(command, check=True, creationflags=0, env=_env_without_xdg_redirects())
         except (OSError, subprocess.SubprocessError) as exc:
             raise self._failed(
                 'attach_namespace', f'Herdr foreground attach failed: {exc}',

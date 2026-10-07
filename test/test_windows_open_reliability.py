@@ -44,7 +44,7 @@ def test_readiness_timeout_is_a_failure(monkeypatch, tmp_path):
 
 def attach_adapter(monkeypatch, run):
     adapter = HerdrCliRequestAdapter(session_name='ccb-test', herdr_executable='herdr',
-                                     run_fn=run, which_fn=lambda _: 'herdr')
+                                     run_fn=run, foreground_run_fn=run, which_fn=lambda _: 'herdr')
     monkeypatch.setattr(adapter, '_resolve_logical_workspace', lambda **kw: {'workspace_id': 'w1'})
     monkeypatch.setattr(adapter, '_command', lambda *a, **kw: None)
     return adapter
@@ -72,6 +72,7 @@ def test_attach_preserves_console_through_runtime_wrapper(monkeypatch):
     calls = []
     monkeypatch.setattr(subprocess, 'run', lambda *a, **kw: calls.append(kw) or subprocess.CompletedProcess(a, 0))
     adapter = attach_adapter(monkeypatch, api._run)
+    adapter._foreground_run_fn = subprocess.run
     adapter('attach_namespace', {'namespace_id': 'w1'})
     assert calls[0].get('creationflags', 0) == 0
 

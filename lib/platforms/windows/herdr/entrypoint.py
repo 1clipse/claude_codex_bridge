@@ -5,21 +5,30 @@ import os
 import sys
 
 from cli import phase2
-from cli.entrypoint import run_cli_entrypoint
+from cli.phase2_runtime import handlers_start as shared_start
 from cli.phase2_runtime.handlers_start import (
-    handle_start, _ccbd_herdr_session_name, _print_herdr_daemon_conflict,
+    _ccbd_herdr_session_name, _print_herdr_daemon_conflict,
     _stream_is_tty, _env_truthy,
 )
 from cli.services import start_foreground as foreground
 from cli.services.start_foreground import ForegroundAttachError
+from platforms.windows.herdr.cli_entrypoint import run_native_cli_entrypoint
 
 
-def run_native_cli_entrypoint(argv, **kwargs):
-    return run_cli_entrypoint(argv, phase2_handler=_native_phase2, **kwargs)
-
-
-def _native_phase2(argv, **kwargs):
-    return phase2.maybe_handle_phase2(argv, dispatch_fn=_native_dispatch, **kwargs)
+def _native_phase2(argv, *, cwd=None, stdout=None, stderr=None):
+    out, err = stdout or sys.stdout, stderr or sys.stderr
+    command = phase2.parse_phase2_command(
+        argv, config_command=phase2._looks_like_config_validate(argv), err=err)
+    if command is None:
+        return 2
+    if command.kind not in {'herdr-open', 'start'}:
+        return phase2.maybe_handle_phase2(argv, cwd=cwd, stdout=out, stderr=err)
+    try:
+        context = phase2._build_context(command, cwd=cwd, out=out)
+        phase2.ensure_bootstrap_project_config(context.project.project_root)
+        return _native_dispatch(context, command, out)
+    except Exception as exc:
+        return phase2.handle_phase2_exception(err, command_kind=command.kind, exc=exc)
 
 
 def _native_dispatch(context, command, out):
@@ -27,8 +36,25 @@ def _native_dispatch(context, command, out):
     if command.kind == 'herdr-open':
         return handle_herdr_open(context, command, out, services)
     if command.kind == 'start':
-        return handle_start(context, command, out, services, attach_fn=attach_started_project_namespace)
+        return handle_start(context, command, out, services)
     return phase2._dispatch_impl(context, command, out, services)
+
+
+def handle_start(context, command, out, services):
+    shared_start._ensure_project_commands_approved(context, out, services)
+    shared_start._ensure_herdr_runtime_evidence(context)
+    interactive = (not _env_truthy('CCB_NO_ATTACH')
+                   and _stream_is_tty(sys.stdin) and _stream_is_tty(out))
+    size = shared_start._terminal_size_for_streams(out, sys.stdin) if interactive else None
+    if size is not None:
+        summary = services.start_agents(context, command, terminal_size=size)
+    else:
+        summary = services.start_agents(context, command)
+    if interactive:
+        attach_started_project_namespace(context)
+    else:
+        services.write_lines(out, services.render_start(summary))
+    return 0
 
 
 def attach_started_project_namespace(context):

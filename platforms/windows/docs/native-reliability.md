@@ -1,9 +1,13 @@
 # Native Windows open reliability
 
-This change depends on the shared CLI dependency-injection prerequisite. The
-native EXE runs `platforms/windows/ccb.py`, which calls the shared source wrapper
-with platform-owned handlers. Parsing, source guards and config validation still
-use the shared implementation; no global handlers are patched. Direct invocation
+This change is self-contained in Windows-owned paths and has no prerequisite
+shared-code change. The native EXE runs `platforms/windows/ccb.py`, which reuses
+the existing source guard, platform detection and metadata. Windows-owned CLI
+composition preserves the shared early-command ordering and calls existing
+parsing, config validation and approval helpers. Only start/open dispatch and
+foreground attachment are implemented here; no global handlers are patched.
+Contract tests compare early-command behavior with the unchanged shared entrypoint.
+Direct invocation
 of the repository-root `ccb.py` keeps the legacy shared route. Use the native EXE
 or `python platforms/windows/ccb.py` for this Windows behavior.
 
@@ -22,6 +26,8 @@ Interactive attachment inherits the invoking console and lasts until detach;
 it does not spawn a second hidden UI or impose a five-second lifetime. A failed
 attachment raises an error. `--wait-ready` requires a live namespace ping and
 returns a nonzero status on timeout.
+The Herdr adapter uses a separate foreground subprocess runner, so background
+control wrappers cannot hide its console. Shared subprocess defaults are unchanged.
 
 The native EXE defaults `CCB_STARTUP_TRANSACTION_TIMEOUT_S` to 180 seconds when
 not already configured, allowing initial plugin projection to finish. This does

@@ -269,6 +269,7 @@ def verify_archive(artifact_path: Path, *, version: str) -> None:
         f"{ARTIFACT_BASENAME}/platforms/windows/ccb.py",
         f"{ARTIFACT_BASENAME}/platforms/windows/start.ps1",
         f"{ARTIFACT_BASENAME}/lib/platforms/windows/herdr/entrypoint.py",
+        f"{ARTIFACT_BASENAME}/lib/platforms/windows/herdr/cli_entrypoint.py",
     }
     with zipfile.ZipFile(artifact_path) as archive:
         names = set(archive.namelist())

@@ -113,7 +113,8 @@ def test_metadata_archive_and_checksum_are_self_consistent(tmp_path: Path) -> No
     (artifact_root / "VERSION").write_text("8.6.6\n", encoding="utf-8")
     (artifact_root / "install.ps1").write_text("Write-Host install\n", encoding="utf-8")
     for relative in ('platforms/windows/ccb.py', 'platforms/windows/start.ps1',
-                     'lib/platforms/windows/herdr/entrypoint.py'):
+                     'lib/platforms/windows/herdr/entrypoint.py',
+                     'lib/platforms/windows/herdr/cli_entrypoint.py'):
         path = artifact_root / relative
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text('test entry\n', encoding='utf-8')
