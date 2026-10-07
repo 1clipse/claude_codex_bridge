@@ -307,11 +307,11 @@ def _stub_bootstrap_ok(monkeypatch) -> None:
 
 
 def test_handle_herdr_open_rejects_conflicting_tmux_daemon(monkeypatch, capsys) -> None:
-    from cli.phase2_runtime.handlers_start import handle_herdr_open
+    from platforms.windows.herdr.entrypoint import handle_herdr_open
 
     _stub_bootstrap_ok(monkeypatch)
     monkeypatch.setattr(
-        'cli.phase2_runtime.handlers_start._daemon_running_and_backend',
+        'platforms.windows.herdr.entrypoint._daemon_running_and_backend',
         lambda context: (True, 'tmux'),
     )
     rc = handle_herdr_open(None, ParsedHerdrOpenCommand(project=None), sys.stdout, None)
@@ -322,11 +322,11 @@ def test_handle_herdr_open_rejects_conflicting_tmux_daemon(monkeypatch, capsys) 
 
 
 def test_handle_herdr_open_rejects_daemon_with_unknown_backend(monkeypatch, capsys) -> None:
-    from cli.phase2_runtime.handlers_start import handle_herdr_open
+    from platforms.windows.herdr.entrypoint import handle_herdr_open
 
     _stub_bootstrap_ok(monkeypatch)
     monkeypatch.setattr(
-        'cli.phase2_runtime.handlers_start._daemon_running_and_backend',
+        'platforms.windows.herdr.entrypoint._daemon_running_and_backend',
         lambda context: (True, None),
     )
     rc = handle_herdr_open(None, ParsedHerdrOpenCommand(project=None), sys.stdout, None)
@@ -335,13 +335,14 @@ def test_handle_herdr_open_rejects_daemon_with_unknown_backend(monkeypatch, caps
 
 
 def test_handle_herdr_open_proceeds_when_daemon_is_herdr(monkeypatch) -> None:
-    from cli.phase2_runtime.handlers_start import handle_herdr_open
+    from platforms.windows.herdr.entrypoint import handle_herdr_open
 
     _stub_bootstrap_ok(monkeypatch)
     monkeypatch.setattr(
-        'cli.phase2_runtime.handlers_start._daemon_running_and_backend',
+        'platforms.windows.herdr.entrypoint._daemon_running_and_backend',
         lambda context: (True, 'herdr'),
     )
+    monkeypatch.setattr('platforms.windows.herdr.entrypoint._wait_for_ccbd_mounted', lambda context: (True, 'mounted'))
     started: dict[str, bool] = {}
 
     def _fake_handle_start(context, command, out, services) -> int:
@@ -349,21 +350,21 @@ def test_handle_herdr_open_proceeds_when_daemon_is_herdr(monkeypatch) -> None:
         return 0
 
     monkeypatch.setattr(
-        'cli.phase2_runtime.handlers_start.handle_start',
+        'platforms.windows.herdr.entrypoint.handle_start',
         _fake_handle_start,
     )
     rc = handle_herdr_open(None, ParsedHerdrOpenCommand(project=None), sys.stdout, None)
     assert rc == 0
-    assert started.get('started') is True
+    assert not started
 
 
 def test_handle_herdr_open_wait_ready_blocks_until_mounted(monkeypatch) -> None:
     """P1: --wait-ready makes handle_herdr_open poll ccbd lifecycle to mounted."""
-    from cli.phase2_runtime.handlers_start import handle_herdr_open
+    from platforms.windows.herdr.entrypoint import handle_herdr_open
 
     _stub_bootstrap_ok(monkeypatch)
     monkeypatch.setattr(
-        'cli.phase2_runtime.handlers_start._daemon_running_and_backend',
+        'platforms.windows.herdr.entrypoint._daemon_running_and_backend',
         lambda context: (True, 'herdr'),
     )
 
@@ -371,7 +372,7 @@ def test_handle_herdr_open_wait_ready_blocks_until_mounted(monkeypatch) -> None:
         return 0
 
     monkeypatch.setattr(
-        'cli.phase2_runtime.handlers_start.handle_start',
+        'platforms.windows.herdr.entrypoint.handle_start',
         _fake_handle_start,
     )
     waited: list[object] = []
@@ -388,7 +389,7 @@ def test_handle_herdr_open_wait_ready_blocks_until_mounted(monkeypatch) -> None:
         return (True, 'mounted')
 
     monkeypatch.setattr(
-        'cli.phase2_runtime.handlers_start._wait_for_ccbd_mounted',
+        'platforms.windows.herdr.entrypoint._wait_for_ccbd_mounted',
         _fake_wait,
     )
     command = ParsedHerdrOpenCommand(project=None, no_attach=True, wait_ready=True)
@@ -398,13 +399,13 @@ def test_handle_herdr_open_wait_ready_blocks_until_mounted(monkeypatch) -> None:
 
 
 def test_handle_herdr_open_no_attach_is_scoped_to_start(monkeypatch) -> None:
-    from cli.phase2_runtime.handlers_start import handle_herdr_open
+    from platforms.windows.herdr.entrypoint import handle_herdr_open
 
     _stub_bootstrap_ok(monkeypatch)
     monkeypatch.delenv('CCB_NO_ATTACH', raising=False)
     monkeypatch.setattr(
-        'cli.phase2_runtime.handlers_start._daemon_running_and_backend',
-        lambda context: (True, 'herdr'),
+        'platforms.windows.herdr.entrypoint._daemon_running_and_backend',
+        lambda context: (False, None),
     )
     seen: list[str | None] = []
 
@@ -414,7 +415,7 @@ def test_handle_herdr_open_no_attach_is_scoped_to_start(monkeypatch) -> None:
         return 0
 
     monkeypatch.setattr(
-        'cli.phase2_runtime.handlers_start.handle_start',
+        'platforms.windows.herdr.entrypoint.handle_start',
         _fake_handle_start,
     )
 
@@ -431,31 +432,31 @@ def test_handle_herdr_open_no_attach_is_scoped_to_start(monkeypatch) -> None:
 
 
 def test_handle_herdr_open_wait_ready_reports_timeout(monkeypatch, capsys) -> None:
-    """P1: --wait-ready timeout surfaces a diagnostic but keeps the rc."""
-    from cli.phase2_runtime.handlers_start import handle_herdr_open
+    """P1: --wait-ready timeout surfaces a diagnostic and fails."""
+    from platforms.windows.herdr.entrypoint import handle_herdr_open
 
     _stub_bootstrap_ok(monkeypatch)
     monkeypatch.setattr(
-        'cli.phase2_runtime.handlers_start._daemon_running_and_backend',
+        'platforms.windows.herdr.entrypoint._daemon_running_and_backend',
         lambda context: (True, 'herdr'),
     )
     monkeypatch.setattr(
-        'cli.phase2_runtime.handlers_start.handle_start',
+        'platforms.windows.herdr.entrypoint.handle_start',
         lambda context, command, out, services: 0,
     )
     monkeypatch.setattr(
-        'cli.phase2_runtime.handlers_start._wait_for_ccbd_mounted',
+        'platforms.windows.herdr.entrypoint._wait_for_ccbd_mounted',
         lambda context, *args, **kwargs: (False, 'starting'),
     )
     command = ParsedHerdrOpenCommand(project=None, no_attach=True, wait_ready=True)
     rc = handle_herdr_open(None, command, sys.stdout, None)
-    assert rc == 0
+    assert rc == 1
     assert 'not ready after waiting' in capsys.readouterr().err
 
 
 def test_ccbd_herdr_session_name_defensive() -> None:
     """P0: _ccbd_herdr_session_name tolerates a missing context/paths."""
-    from cli.phase2_runtime.handlers_start import _ccbd_herdr_session_name
+    from platforms.windows.herdr.entrypoint import _ccbd_herdr_session_name
 
     assert _ccbd_herdr_session_name(None) is None
     assert _ccbd_herdr_session_name(SimpleNamespace(paths=None)) is None
@@ -465,7 +466,7 @@ def test_ccbd_herdr_session_name_defensive() -> None:
 
 
 def test_daemon_running_and_backend_detects_herdr(monkeypatch) -> None:
-    from cli.phase2_runtime.handlers_start import _daemon_running_and_backend
+    from platforms.windows.herdr.entrypoint import _daemon_running_and_backend
 
     class _FakeInspection:
         pid_alive = True
@@ -495,7 +496,7 @@ def test_daemon_running_and_backend_fails_closed_on_inspection_error(
     monkeypatch,
 ) -> None:
     """DEC-3: generic inspection errors → fail-closed (treat as potential conflict)."""
-    from cli.phase2_runtime.handlers_start import _daemon_running_and_backend
+    from platforms.windows.herdr.entrypoint import _daemon_running_and_backend
 
     def _boom(context):
         raise RuntimeError('no lease')
