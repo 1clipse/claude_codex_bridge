@@ -262,7 +262,7 @@ class Runner:
         invalid.mkdir(exist_ok=True)
         (invalid / '.ccb').mkdir(exist_ok=True)
         (invalid / '.ccb/ccb.config').write_text('version = [broken TOML', encoding='utf-8')
-        bad = subprocess.run([sys.executable, str(ROOT/'ccb.py'), 'herdr', 'open', '--no-attach', '--wait-ready'],
+        bad = subprocess.run([sys.executable, str(ROOT/'platforms/windows/ccb.py'), 'herdr', 'open', '--no-attach', '--wait-ready'],
                              cwd=invalid, env=self.env, capture_output=True, encoding='utf-8',
                              timeout=30, creationflags=subprocess.CREATE_NO_WINDOW)
         self.record('invalid_config_fails', bad.returncode != 0, exit_code=bad.returncode)
