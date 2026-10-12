@@ -22,8 +22,8 @@ def main():
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
     work = Path(tempfile.mkdtemp(prefix='native-maintenance-', dir=args.output.resolve()))
-    root = work / 'runtime'
-    shutil.copytree(args.baseline, root, ignore=shutil.ignore_patterns('.venv', '__pycache__'))
+    root = work / '中文 runtime'
+    shutil.copytree(args.baseline, root, ignore=shutil.ignore_patterns('__pycache__'))
     maintenance.metadata(root)
     (root / 'config/e2e-local.txt').write_text('配置 preserved', encoding='utf-8')
     original = (root / 'VERSION').read_bytes()
@@ -77,7 +77,7 @@ def main():
         for item in source.infolist():
             content = source.read(item)
             if item.filename.endswith('/platforms/windows/ccb.py'):
-                guard = ("import pathlib, sys\nif pathlib.Path(__file__).resolve().parents[2].name == 'runtime':\n    sys.exit(17)\n")
+                guard = (f"import pathlib, sys\nif pathlib.Path(__file__).resolve().parents[2].name == {root.name!r}:\n    sys.exit(17)\n")
                 content = guard.encode() + content
             target.writestr(item, content)
     failed = run('update', '--archive', str(failing), '--sha256', hashlib.sha256(failing.read_bytes()).hexdigest())

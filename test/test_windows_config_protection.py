@@ -1,5 +1,6 @@
 from pathlib import Path
 import json
+import os
 import shutil
 import subprocess
 
@@ -67,3 +68,26 @@ def test_new_file_and_bom_input(tmp_path):
         assert result.returncode == 0, result.stderr
         assert json.loads(path.read_bytes()) == {}
         assert not path.read_bytes().startswith(b'\xef\xbb\xbf')
+
+
+def test_real_installer_permission_roundtrip(tmp_path):
+    installer = (HELPER.parent / 'install.ps1').read_text(encoding='utf-8-sig')
+    function = 'function Install-ClaudeConfig {' + installer.split('function Install-ClaudeConfig {', 1)[1].split('function Remove-MarkedMemoryBlock', 1)[0]
+    removal = installer.split('  # 5. Remove settings.json permissions', 1)[1].split('  # 6. Remove Codex skills', 1)[0]
+    profile = tmp_path / 'profile'
+    target = profile / '.claude/settings.json'
+    target.parent.mkdir(parents=True)
+    original = dict(hooks={'command': 'D:/中文目录/工具.js'}, permissions={'allow': ['Read']})
+    target.write_text(json.dumps(original, ensure_ascii=False), encoding='utf-8')
+    script = tmp_path / 'installer-permissions.ps1'
+    script.write_text("$ErrorActionPreference='Stop'\n. " + literal(HELPER) +
+                      '\n$repoRoot = ' + literal(tmp_path / 'empty-source') +
+                      '\nfunction Remove-CCBMemoryInjections {}\n' + function +
+                      '\nInstall-ClaudeConfig\n$settings = Read-CCBSettings ' + literal(target) +
+                      '\n' + removal, encoding='utf-8-sig')
+    result = subprocess.run([PS, '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass',
+                             '-File', str(script)], env=dict(os.environ, USERPROFILE=str(profile)),
+                            capture_output=True, timeout=30)
+    assert result.returncode == 0, result.stderr
+    assert json.loads(target.read_bytes()) == original
+    assert len(list(target.parent.glob('settings.json.ccb-backup-*'))) == 2
